@@ -187,3 +187,18 @@ def test_japanese_line_splits_between_phrases():
         assert offset in starts                              # every part starts where a phrase starts
         offset += len(s["text"])
 
+
+
+def test_unmatched_character_after_a_pause_is_moved_back_to_its_word():
+    # as aligned on the test video: 「ま」 stretched over a 13 s music break, then 「す。」 placed after it
+    # with score 0 (no match), in the same Whisper segment as the next speech
+    chars = [(c, 11.0 + i * 0.12, 11.12 + i * 0.12) for i, c in enumerate("聞いてみたいと思い")]
+    chars += [("ま", 12.08, 25.78), ("す", 25.78, 25.80), ("。", 25.80, 25.90)]
+    chars += [(c, 25.9 + i * 0.12, 26.02 + i * 0.12) for i, c in enumerate("こんにちは")] + [("。", 26.5, 26.6)]
+    w = words(*chars)
+    w[10]["score"] = 0.0
+    doc = build_segments(transcript([w], language="ja"), [], video_duration=30.0)
+    first = doc["segments"][0]
+    assert first["text"] == "聞いてみたいと思います。"
+    assert first["end"] < 13.0
+    assert doc["segments"][1]["text"] == "こんにちは。" and doc["segments"][1]["start"] >= 25.9
