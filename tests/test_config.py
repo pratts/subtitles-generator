@@ -18,10 +18,10 @@ def test_precedence_defaults_file_env_flags(tmp_path, monkeypatch):
     assert os.environ["LLM_MODEL"] == "qwen2.5:14b"   # exported for the backend that reads it
 
 
-def test_nllb_is_the_default_translator(monkeypatch):
+def test_gpt_is_the_default_translator(monkeypatch):
     monkeypatch.delenv("TRANSLATOR", raising=False)
     monkeypatch.chdir("/")                            # no config.toml
-    assert load_config()["TRANSLATOR"] == "nllb"
+    assert load_config()["TRANSLATOR"] == "gpt"
 
 
 def test_unknown_setting_is_an_error(tmp_path):

@@ -101,8 +101,8 @@ STAGES = [
     Stage("segment", "building subtitle segments", segment, lambda r: [r.segments],
           ["SEGMENT_MIN_DURATION", "SEGMENT_MERGE_GAP"]),
     Stage("translate", "translating the segments", translate, lambda r: [r.translation()],
-          ["TRANSLATOR", "TARGET_LANGUAGE", "GLOSSARY", "VIDEO_CONTEXT", "LLM_MODEL", "LLM_BASE_URL",
-           "NLLB_MODEL"], per_translator=True),
+          ["TRANSLATOR", "TARGET_LANGUAGE", "GLOSSARY", "VIDEO_CONTEXT", "LLM_MODEL", "LLM_BASE_URL"],
+          per_translator=True),
 ]
 
 
@@ -124,7 +124,7 @@ def main(argv: list[str] | None = None):
     parser.add_argument("input", help="path to the video")
     parser.add_argument("--to", help="target languages, comma-separated, e.g. es,fr,hi")
     parser.add_argument("--from", dest="source", help="source language code (default: detect)")
-    parser.add_argument("--translator", choices=["nllb", "google", "gpt"], help="translation backend (default: nllb)")
+    parser.add_argument("--translator", choices=["gpt", "google"], help="translation backend (default: gpt)")
     parser.add_argument("--glossary", help='JSON file {"source term": "translation"} of names and terms')
     parser.add_argument("--context", help="one-line description of the video (used by gpt)")
     parser.add_argument("--config", help="settings file (default: ./config.toml if present)")
