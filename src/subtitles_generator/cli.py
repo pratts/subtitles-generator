@@ -35,6 +35,8 @@ class Run:
 
         self.metadata = w("metadata.json")
         self.source_audio = w("source-audio.wav")
+        self.vocals = w("separation", "vocals.wav")
+        self.background = w("separation", "background.wav")
         self.transcript = w("transcript.json")
         self.transcript_srt = w("transcript.srt")
         self.segments = w("segments.json")
@@ -67,10 +69,21 @@ def extract(run: Run):
     extract_audio(run.video, run.source_audio, sample_rate=ASR_SAMPLE_RATE, mono=True)
 
 
+def separate(run: Run):
+    try:
+        from subtitles_generator.separate import separate_vocals
+    except ModuleNotFoundError as e:
+        if (e.name or "").split(".")[0] != "demucs":
+            raise
+        raise SystemExit('separate = true needs Demucs: pip install -e ".[separate]" -c constraints.txt') from None
+    separate_vocals(run.source_audio, run.vocals, run.background, model=run.config["DEMUCS_MODEL"])
+
+
 def transcribe_stage(run: Run):
     from subtitles_generator.transcribe import transcribe
     c = run.config
-    transcribe(run.source_audio, run.transcript, run.transcript_srt, backend=c["ASR_BACKEND"],
+    audio = run.vocals if c["SEPARATE"] else run.source_audio
+    transcribe(audio, run.transcript, run.transcript_srt, backend=c["ASR_BACKEND"],
                model_name=c["WHISPER_MODEL"], language=c["SOURCE_LANGUAGE"] or None, device=c["ASR_DEVICE"] or None,
                glossary=c["GLOSSARY"])
 
@@ -96,8 +109,11 @@ def translate(run: Run):
 STAGES = [
     Stage("extract", "reading video metadata and extracting the audio", extract,
           lambda r: [r.metadata, r.source_audio]),
+    # only with SEPARATE
+    Stage("separate", "separating vocals from background", separate,
+          lambda r: [r.vocals, r.background], ["DEMUCS_MODEL"]),
     Stage("transcribe", "transcribing the audio", transcribe_stage,
-          lambda r: [r.transcript], ["ASR_BACKEND", "WHISPER_MODEL", "SOURCE_LANGUAGE", "GLOSSARY"]),
+          lambda r: [r.transcript], ["SEPARATE", "ASR_BACKEND", "WHISPER_MODEL", "SOURCE_LANGUAGE", "GLOSSARY"]),
     Stage("segment", "building subtitle segments", segment, lambda r: [r.segments],
           ["SEGMENT_MIN_DURATION", "SEGMENT_MERGE_GAP"]),
     Stage("translate", "translating the segments", translate, lambda r: [r.translation()],
@@ -125,6 +141,8 @@ def main(argv: list[str] | None = None):
     parser.add_argument("--to", help="target languages, comma-separated, e.g. es,fr,hi")
     parser.add_argument("--from", dest="source", help="source language code (default: detect)")
     parser.add_argument("--translator", choices=["gpt", "google"], help="translation backend (default: gpt)")
+    parser.add_argument("--separate", action="store_true", default=None,
+                        help="transcribe vocals separated from music and noise (needs the [separate] extra; slower)")
     parser.add_argument("--glossary", help='JSON file {"source term": "translation"} of names and terms')
     parser.add_argument("--context", help="one-line description of the video (used by gpt)")
     parser.add_argument("--config", help="settings file (default: ./config.toml if present)")
@@ -139,7 +157,8 @@ def main(argv: list[str] | None = None):
     if not os.path.exists(args.input):
         parser.error(f"input video not found: {args.input}")
     config = load_config(args.config, {"SOURCE_LANGUAGE": args.source, "TARGET_LANGUAGES": args.to,
-                                       "TRANSLATOR": args.translator, "GLOSSARY_FILE": args.glossary,
+                                       "TRANSLATOR": args.translator, "SEPARATE": args.separate,
+                                       "GLOSSARY_FILE": args.glossary,
                                        "VIDEO_CONTEXT": args.context})
     # the glossary's content, not its path, decides whether transcription and translation must run again
     from subtitles_generator.translate import load_glossary
@@ -171,14 +190,15 @@ def subtitle(run: Run, config: dict, args):
     print(f"🎬 Subtitling {run.video}{languages} "
           f"(translator: {config['TRANSLATOR']}); work folder: {run.work_dir}")
     inputs_id = file_id(run.video)
+    stages = [s for s in STAGES if s.name != "separate" or config["SEPARATE"]]
     if not targets:
-        Pipeline(STAGES, run.work_dir, config["TRANSLATOR"]).run(run, config, to_stage="segment", force=args.force,
+        Pipeline(stages, run.work_dir, config["TRANSLATOR"]).run(run, config, to_stage="segment", force=args.force,
                                                                   inputs_id=inputs_id)
     # one pass per language: the stages before translate are shared, so later passes skip them
     for i, target in enumerate(targets):
         config["TARGET_LANGUAGE"] = target
         print(f"🌐 {target}")
-        pipeline = Pipeline(STAGES, run.work_dir, f"{config['TRANSLATOR']}:{target}")
+        pipeline = Pipeline(stages, run.work_dir, f"{config['TRANSLATOR']}:{target}")
         # --force re-runs everything once, then only translation for the other languages
         pipeline.run(run, config, force=args.force and i == 0,
                      from_stage="translate" if args.force and i > 0 else None, inputs_id=inputs_id)

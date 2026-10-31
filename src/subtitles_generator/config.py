@@ -8,6 +8,9 @@ SETTINGS = {
     # languages
     "SOURCE_LANGUAGE": (str, ""),          # empty = detect
     "TARGET_LANGUAGES": (str, ""),         # comma-separated, e.g. "es,fr"; empty = source-language subtitles only
+    # separation (the [separate] extra): transcribe Demucs-separated vocals instead of the full mix
+    "SEPARATE": (bool, False),
+    "DEMUCS_MODEL": (str, "htdemucs_ft"),
     # transcription
     "ASR_BACKEND": (str, "whisperx"),
     "WHISPER_MODEL": (str, "large-v3-turbo"),

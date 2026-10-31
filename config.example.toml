@@ -7,6 +7,11 @@
 source_language = ""
 target_languages = ""
 
+# Vocal separation (needs the [separate] extra): transcribe the voices separated from music and noise by Demucs.
+# Recovers speech hidden by background sound, but is slower. htdemucs_ft = best quality, htdemucs = ~4x faster
+separate = false
+demucs_model = "htdemucs_ft"
+
 # Speech recognition: backend (whisperx, or mlx on Apple Silicon) and Whisper model
 asr_backend = "whisperx"
 whisper_model = "large-v3-turbo"

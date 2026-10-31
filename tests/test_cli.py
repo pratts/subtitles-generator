@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import os
+import sys
 
 import pytest
 
@@ -45,7 +46,7 @@ def fake_stages(monkeypatch, tmp_path):
         return run
 
     monkeypatch.setattr(cli, "STAGES", [dataclasses.replace(s, run=recorder(s.name)) for s in cli.STAGES])
-    for name in ("SOURCE_LANGUAGE", "TARGET_LANGUAGES", "TRANSLATOR"):
+    for name in ("SOURCE_LANGUAGE", "TARGET_LANGUAGES", "TRANSLATOR", "SEPARATE"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.chdir(tmp_path)
     (tmp_path / "talk.mp4").write_bytes(b"video")
@@ -92,3 +93,22 @@ def test_output_follows_the_selected_translator(fake_stages):
     assert fake_stages == []                      # google's translation is reused...
     assert srt_text("output/talk.es.srt") == "google es"    # ...and written again
     assert srt_text("output/talk.ja.srt") == "こんにちは"
+
+
+def test_separation_is_opt_in_and_switching_it_transcribes_again(fake_stages):
+    cli.main(["talk.mp4", "--to", "es"])
+    assert "separate" not in fake_stages
+    fake_stages.clear()
+    cli.main(["talk.mp4", "--to", "es", "--separate"])
+    assert fake_stages == ["separate", "transcribe", "segment", "translate:es"]
+    fake_stages.clear()
+    cli.main(["talk.mp4", "--to", "es"])
+    assert fake_stages == ["transcribe", "segment", "translate:es"]    # back to the full mix
+
+
+def test_separation_without_demucs_says_how_to_install_it(monkeypatch, tmp_path):
+    monkeypatch.setitem(sys.modules, "demucs", None)                   # as if not installed
+    monkeypatch.delitem(sys.modules, "subtitles_generator.separate", raising=False)
+    run = cli.Run(str(tmp_path / "talk.mp4"), {"TRANSLATOR": "gpt"}, str(tmp_path / "work"))
+    with pytest.raises(SystemExit, match=r"\[separate\]"):
+        cli.separate(run)

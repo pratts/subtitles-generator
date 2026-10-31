@@ -59,11 +59,18 @@ subtitle my-video.mp4 --verbose    # also show the libraries' own output
 ```
 The libraries' own output is always written to `work/<video name>/run.log`. Run `subtitle --help` for all options.
 
+### Speech hidden by music or noise
+With `--separate` (or `separate = true` in `config.toml`), [Demucs](https://github.com/adefossez/demucs) first separates the voices from the music and noise, and Whisper transcribes the voices alone. This recovers lines that background sound hides, but it costs more:
+- a larger install: `pip install -e ".[separate]" -c constraints.txt`, and a model download on the first run
+- a slower run: on an Apple Silicon CPU, a little over 1 s per second of video (49 s for a 42 s video), before transcription
+
+Turning it on or off transcribes the video again. For about 4× faster separation at slightly lower quality, set `demucs_model = "htdemucs"`.
+
 ### Faster transcription on Apple Silicon
 Set `asr_backend = "mlx"` in `config.toml` (or `ASR_BACKEND=mlx`). Word timing is the same: both backends align words with wav2vec2.
 
 ## Known limitations
-- Background noise or music can hide speech, so some lines are not transcribed.
+- Background noise or music can hide speech, so some lines are not transcribed; `--separate` helps.
 - A subtitle shows at most 84 characters (2 lines of 42) for at most 7 s; longer lines are split between words. Translations keep each line's timing, so when a sentence spans two lines, word order can differ from the speech.
 
 ## Development
