@@ -16,17 +16,15 @@ SETTINGS = {
     "SEGMENT_MIN_DURATION": (float, 1.5),
     "SEGMENT_MERGE_GAP": (float, 1.0),
     # translation
-    "TRANSLATOR": (str, "nllb"),
+    "TRANSLATOR": (str, "gpt"),
     "GLOSSARY_FILE": (str, ""),
     "VIDEO_CONTEXT": (str, ""),
     "LLM_MODEL": (str, "gpt-5-mini"),
     "LLM_BASE_URL": (str, ""),
-    "NLLB_MODEL": (str, "facebook/nllb-200-distilled-600M"),
-    "TRANSLATION_DEVICE": (str, ""),
 }
 
 # Settings that translator backends read from the environment themselves
-BACKEND_SETTINGS = ("LLM_MODEL", "LLM_BASE_URL", "NLLB_MODEL", "TRANSLATION_DEVICE")
+BACKEND_SETTINGS = ("LLM_MODEL", "LLM_BASE_URL")
 
 
 def load_config(config_path: str | None = None, overrides: dict | None = None) -> dict:

@@ -4,8 +4,7 @@ import os
 import srt
 from datetime import timedelta
 
-TRANSLATORS = {"google": "subtitles_generator.translators.google", "gpt": "subtitles_generator.translators.gpt",
-               "nllb": "subtitles_generator.translators.nllb"}
+TRANSLATORS = {"gpt": "subtitles_generator.translators.gpt", "google": "subtitles_generator.translators.google"}
 
 # Characters per second of natural dubbed speech (spaces and punctuation included),
 # used to give each line a length budget for its time slot

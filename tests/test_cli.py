@@ -85,8 +85,8 @@ def test_force_reruns_everything_once_and_every_translation(fake_stages):
 
 def test_output_follows_the_selected_translator(fake_stages):
     cli.main(["talk.mp4", "--to", "es", "--translator", "google"])
-    cli.main(["talk.mp4", "--to", "es", "--translator", "nllb"])
-    assert srt_text("output/talk.es.srt") == "nllb es"
+    cli.main(["talk.mp4", "--to", "es", "--translator", "gpt"])
+    assert srt_text("output/talk.es.srt") == "gpt es"
     fake_stages.clear()
     cli.main(["talk.mp4", "--to", "es", "--translator", "google"])
     assert fake_stages == []                      # google's translation is reused...

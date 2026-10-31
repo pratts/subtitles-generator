@@ -17,12 +17,10 @@ asr_device = ""
 segment_min_duration = 1.5
 segment_merge_gap = 1.0
 
-# Translation: nllb (fully local, no key), google (needs a Google Cloud key) or gpt (OpenAI or any
-# OpenAI-compatible server)
-translator = "nllb"
+# Translation: gpt (OpenAI or any OpenAI-compatible server; uses the glossary and video context) or google
+# (needs a Google Cloud key)
+translator = "gpt"
 glossary_file = ""          # JSON {"source term": "translation"}: spelling hints for transcription; used by gpt
 video_context = ""          # one-line description of the video, used by gpt
 llm_model = "gpt-5-mini"
 llm_base_url = ""           # e.g. http://localhost:11434/v1 for Ollama; empty = OpenAI
-nllb_model = "facebook/nllb-200-distilled-600M"
-translation_device = ""

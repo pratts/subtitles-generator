@@ -1,7 +1,7 @@
 # subtitles-generator
 
 Subtitles for any video, in any language. The CLI (`subtitle`) is built from the first half of
-[video-translator](https://github.com/pratts/video-translator) (`../video-translator`): read it, never change it.
+[video-translator](https://github.com/pratts/video-translator): read it, never change it.
 See ROADMAP.md for the phases and deferred features.
 
 ## Principles
@@ -33,11 +33,10 @@ main is protected by the "Main branch protection" ruleset
 
 ## "Commit and open the PR"
 Only when the user says so:
-- Make a GPG-signed commit (`git commit -S`) whose message ends with
-  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Make a GPG-signed commit (`git commit -S`).
 - For a non-trivial commit, add a git note (`git notes add`) explaining why it is built this way, not what changed.
 - Push the branch and `refs/notes/commits`.
-- Open the PR with a body ending in `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
+- Open the PR.
 
 ## "Merged. Sync…"
 1. Check that the PR really is merged (`gh pr view N --json state,mergedAt`).

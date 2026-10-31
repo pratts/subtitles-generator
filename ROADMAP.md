@@ -33,14 +33,14 @@ target language.
 **Main work**
 - Version pins in `pyproject.toml` itself, since users of the package never see `constraints.txt`
 - Build and publish (name checked free on PyPI on 2026-10-31), with release notes
-- A README written as the project's front page: pitch, quick start, examples, translator choices (nllb free but
-  rougher, google better, gpt best with glossary and context), the first-run model download, config reference,
+- A README written as the project's front page: pitch, quick start, examples, translator choices (gpt with glossary
+  and context, or google), the first-run model download, config reference,
   known limitations
 
 **Complications to expect**
 - whisperx pins torch and huggingface-hub; loose pins break installs, strict pins clash with users' other packages.
 - ffmpeg can't be installed by pip; the CLI needs a clear error when it is missing.
-- A large install (torch, models) and a ~2.4 GB NLLB download on first use; the first run must not look stuck.
+- A large install (torch) and Whisper model downloads on first use; the first run must not look stuck.
 - `config.toml`, `.env`, `work/` and `output/` resolve against the current folder, which matters once users run
   it from anywhere.
 
