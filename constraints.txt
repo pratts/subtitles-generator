@@ -1,6 +1,7 @@
 # Versions tested together on Python 3.12 (macOS, Apple Silicon). whisperx pins torch~=2.8 and huggingface-hub<1.0.
 # Install with:  pip install -e ".[dev]" -c constraints.txt
 ctranslate2==4.8.2
+demucs==4.1.0
 faster-whisper==1.2.1
 fugashi==1.5.2
 google-cloud-translate==3.28.0

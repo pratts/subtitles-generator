@@ -27,6 +27,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# separating vocals from background sound before transcription (SEPARATE=true)
+separate = ["demucs>=4.1.0"]
 dev = ["pytest"]
 
 [project.scripts]
