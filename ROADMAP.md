@@ -47,7 +47,7 @@ target language.
 **Deferred, add if real output shows a need**
 - CI: a GitHub Actions workflow running the tests, with a README badge (before the first release); then make
   its check required in the main branch ruleset
-- Optional extras: `[separate]` (Demucs), `[diarize]` (pyannote, needs a Hugging Face token)
+- Optional extra `[diarize]` (pyannote, needs a Hugging Face token). Done: `[separate]` (Demucs, #9)
 
 ## Phase 3: a web app
 **Goal:** an upload page with a language picker, progress and download links, running on the same core code as

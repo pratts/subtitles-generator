@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from subtitles_generator import cli
+from subtitles_generator import cli, translate
 
 
 def segment(text):
@@ -46,6 +46,7 @@ def fake_stages(monkeypatch, tmp_path):
         return run
 
     monkeypatch.setattr(cli, "STAGES", [dataclasses.replace(s, run=recorder(s.name)) for s in cli.STAGES])
+    monkeypatch.setattr(translate, "missing_credentials", lambda name: None)
     for name in ("SOURCE_LANGUAGE", "TARGET_LANGUAGES", "TRANSLATOR", "SEPARATE"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.chdir(tmp_path)
@@ -112,3 +113,12 @@ def test_separation_without_demucs_says_how_to_install_it(monkeypatch, tmp_path)
     run = cli.Run(str(tmp_path / "talk.mp4"), {"TRANSLATOR": "gpt"}, str(tmp_path / "work"))
     with pytest.raises(SystemExit, match=r"\[separate\]"):
         cli.separate(run)
+
+
+def test_a_missing_key_stops_before_transcribing(fake_stages, monkeypatch):
+    monkeypatch.setattr(translate, "missing_credentials", lambda name: f"{name} needs a key")
+    with pytest.raises(SystemExit, match="gpt needs a key"):
+        cli.main(["talk.mp4", "--to", "es"])
+    assert fake_stages == []
+    cli.main(["talk.mp4"])                          # the video's own language needs no key
+    assert fake_stages == ["extract", "transcribe", "segment"]

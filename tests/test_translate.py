@@ -95,3 +95,25 @@ def test_char_budget_scales_with_duration_and_language():
     assert T.char_budget(2.0, "en") == 28
     assert T.char_budget(2.0, "ja") == 14
     assert T.char_budget(0.1, "en") == T.MIN_CHARS
+
+
+def test_gpt_needs_a_key_unless_a_local_server_is_set(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_BASE_URL", raising=False)
+    assert "OPENAI_API_KEY" in T.missing_credentials("gpt")
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    assert "OPENAI_API_KEY" in T.missing_credentials("gpt")
+    monkeypatch.setenv("LLM_BASE_URL", "http://localhost:11434/v1")
+    assert T.missing_credentials("gpt") is None
+    monkeypatch.delenv("LLM_BASE_URL")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    assert T.missing_credentials("gpt") is None
+
+
+def test_google_needs_its_credentials_variable(monkeypatch):
+    monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
+    assert "GOOGLE_APPLICATION_CREDENTIALS" in T.missing_credentials("google")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    assert "GOOGLE_APPLICATION_CREDENTIALS" in T.missing_credentials("google")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", "key.json")
+    assert T.missing_credentials("google") is None
