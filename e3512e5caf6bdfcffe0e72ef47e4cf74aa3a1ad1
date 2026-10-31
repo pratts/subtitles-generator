@@ -1,0 +1,11 @@
+The check runs before the pipeline, not inside the translate stage, because transcription comes first and
+takes minutes: failing there wastes the whole run. It runs only with target languages, since source-language
+subtitles need no key. A rare cost: a run whose translations are already cached still needs the key.
+
+It only checks that the variable is set and non-empty. Calling google.auth.default() was tried and dropped
+(the user's call): it took about 3 s when nothing was set up (it probes for the GCE metadata server) and
+added a code path for gcloud logins. So a gcloud-login-only setup is now refused, and a wrong key file
+still fails later with the library's error.
+
+Each translator owns its check (missing_credentials) because only it knows what it needs; the CLI tests
+stub translate.missing_credentials so they do not depend on the developer's real .env.
