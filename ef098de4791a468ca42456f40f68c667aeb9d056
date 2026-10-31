@@ -1,0 +1,13 @@
+_trim_long_words already cut the stretched 「ま」; the 13.7 s line came from the next character, 「す」,
+which the aligner placed 13 s later with score 0.0. The grouper keeps 思います as one phrase and subtitles
+only split between phrases, so neither the 7 s limit nor the trimming could break it.
+
+A score near zero alone does not mark a misplaced character: on the same transcript て, 聞 and に also score
+~0 but sit right next to their neighbours. Only score ~0 together with a gap longer than `pause` does. It
+must also be in the same Whisper block (a new block may really start after a pause) and must not follow a
+sentence end (then the character starts the next sentence and belongs after the pause).
+
+It runs after _trim_long_words, because "right after the previous word" needs that word's trimmed end.
+
+Rejected: not grouping across gaps (leaves a line of just 「す。」 at 25.8 s), and capping a phrase's or
+line's duration (still shows the line over silence up to the cap).
