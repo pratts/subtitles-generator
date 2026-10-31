@@ -1,0 +1,12 @@
+The separate stage is left out of the stage list when SEPARATE is off, rather than kept as a stage that
+does nothing: a no-op stage would still print "[2/5] separate" and count as a step on every run. Switching
+the setting still re-runs transcription, because transcribe's upstream result changes (extract's instead of
+separate's) and SEPARATE is also in transcribe's settings, so that does not depend on the stage order.
+
+Demucs is an extra, not a dependency, because most videos do not need it and it adds a model download and
+about 1.2x the video's length on CPU. The stage imports it lazily and turns a missing demucs into an
+install hint. The check accepts "demucs.api" as well as "demucs", because a module blocked in sys.modules
+(as in the test) is reported under the submodule's name.
+
+background.wav is still written although subtitles never use it: separate.py is copied unchanged from
+video-translator.
