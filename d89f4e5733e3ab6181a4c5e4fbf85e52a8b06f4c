@@ -1,0 +1,5 @@
+Each target language runs its own Pipeline whose key suffix is '<translator>:<lang>', so pipeline.py stays an unchanged copy of video-translator's: the shared stages (extract, transcribe, segment) are fingerprinted the same in every pass and skip, while each language's translate stage keeps its own state. A single translate key would let each language overwrite the others' state, so running es,fr twice would re-translate both every time.
+
+The output SRTs are written after the pipeline on every run, not by the stages: output/<name>.<lang>.srt has no translator in its name, so a stage that listed it as an output looked up to date after switching translator and left the other translator's text in place (seen on the real video: google run skipped, nllb text kept). Rewriting from the work JSON is cheap and always matches the selected translator.
+
+Audio is extracted at 16 kHz mono since only Whisper reads it (no Demucs here). The gpt test uses httpx2 because openai 3.x is built on it; plain httpx was only present in video-translator's venv through another package.
