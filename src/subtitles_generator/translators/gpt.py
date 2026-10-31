@@ -71,6 +71,14 @@ def _client():
     return OpenAI(api_key=api_key, base_url=base_url)
 
 
+def missing_credentials() -> str | None:
+    """Why this backend can't run, or None, checked before the pipeline so a missing key fails fast."""
+    if os.getenv("OPENAI_API_KEY") or os.getenv("LLM_BASE_URL"):
+        return None
+    return ("the gpt translator needs OPENAI_API_KEY: set it in .env (see .env.example), "
+            "or set llm_base_url for a local OpenAI-compatible server")
+
+
 def _model() -> str:
     return os.getenv("LLM_MODEL") or "gpt-5-mini"
 

@@ -1,3 +1,4 @@
+import os
 from functools import cache
 
 # Google Translation API v2 accepts at most 128 texts per request
@@ -9,6 +10,14 @@ def _client():
     # created on first use, so GOOGLE_APPLICATION_CREDENTIALS is only needed when this backend is selected
     from google.cloud import translate_v2
     return translate_v2.Client()
+
+
+def missing_credentials() -> str | None:
+    """Why this backend can't run, or None, checked before the pipeline so a missing key fails fast."""
+    if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+        return None
+    return ("the google translator needs GOOGLE_APPLICATION_CREDENTIALS: set it in .env to the path of "
+            "your service account JSON key (see .env.example)")
 
 
 def translate(items: list[dict], source_language: str, target_language: str,

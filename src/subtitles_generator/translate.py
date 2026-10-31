@@ -24,6 +24,10 @@ def get_translator(name: str):
     return importlib.import_module(TRANSLATORS[name])
 
 
+def missing_credentials(name: str) -> str | None:
+    return get_translator(name).missing_credentials()
+
+
 def char_budget(duration: float, language: str) -> int:
     return max(MIN_CHARS, int(duration * CHARS_PER_SECOND.get(language, DEFAULT_CHARS_PER_SECOND)))
 
