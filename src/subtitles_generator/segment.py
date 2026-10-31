@@ -44,6 +44,7 @@ def build_segments(transcript: dict, turns: list[dict], video_duration: float | 
         return _document(transcript, [], video_duration, no_spaces)
 
     _trim_long_words(words, no_spaces)
+    _move_back_unmatched(words, pause)
     words = group_into_phrases(words, transcript["language"])
     _assign_speakers(words, [t for t in turns if t["end"] - t["start"] >= min_turn_length] or turns)
     _smooth_speakers(words, min_turn, weak_turn, min_support)
@@ -98,6 +99,20 @@ def _trim_long_words(words: list[dict], no_spaces: bool):
             w["start"] = w["end"] - short
         else:
             w["end"] = w["start"] + short
+
+
+def _move_back_unmatched(words: list[dict], pause: float, min_score: float = 0.01):
+    """
+    A word the aligner found no match for (score ~0) can be placed after a pause, at the next speech
+    (e.g. the 「す」 of 思います 13 s later, past a music break), and the phrase grouper then stretches its
+    whole word over the pause. Put it right after the word before it, where the pause was cut off.
+    """
+    for prev, w in zip(words, words[1:]):
+        if (w.get("score", 1.0) < min_score and w["block"] == prev["block"]
+                and w["start"] - prev["end"] > pause and not prev["word"].strip().endswith(SENTENCE_END)):
+            length = w["end"] - w["start"]
+            w["start"] = prev["end"]
+            w["end"] = prev["end"] + length
 
 
 def _assign_speakers(words: list[dict], turns: list[dict]):
