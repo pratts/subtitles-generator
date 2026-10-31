@@ -122,3 +122,68 @@ def test_short_line_is_not_merged_across_a_long_pause():
     t = transcript([words(*chars("お聞きしてるんですけど", 0.0, 0.2), *chars("はい", 3.5, 0.2))], language="ja")
     segments = build_segments(t, [{"start": 0, "end": 5, "speaker": "S"}])["segments"]
     assert [s["text"] for s in segments] == ["お聞きしてるんですけど", "はい"]
+
+
+def timed(text, start, seconds_per_char=0.065, gap=0.04, separator=" "):
+    """Words of text (characters when separator is ""), timed like WhisperX: duration by length, small gaps."""
+    units = text.split(separator) if separator else list(text)
+    out, t = [], start
+    for unit in units:
+        end = t + max(0.12, len(unit) * seconds_per_char)
+        out.append((unit, round(t, 3), round(end, 3)))
+        t = end + gap
+    return words(*out)
+
+
+LECTURE = ("so what we found when we went back to the original recordings was that almost every speaker slowed "
+           "down right before the important part of the sentence")
+
+
+def test_text_longer_than_two_lines_splits_at_the_middle_word_gap():
+    doc = build_segments(transcript([timed(LECTURE, 3.0)]), [], video_duration=30.0)
+    texts = [s["text"] for s in doc["segments"]]
+    assert len(texts) == 2 and all(len(t) <= 84 for t in texts)
+    assert " ".join(texts) == LECTURE
+    assert abs(len(texts[0]) - len(texts[1])) <= 12           # balanced, not greedy
+    first, second = doc["segments"]
+    assert first["words"][-1]["end"] == first["end"] and second["start"] == second["words"][0]["start"]
+    assert first["end"] <= second["start"]
+
+
+def test_very_long_text_splits_until_every_part_fits():
+    text = " ".join([LECTURE] * 2)
+    doc = build_segments(transcript([timed(text, 0.0, seconds_per_char=0.03)]), [], video_duration=60.0)
+    assert len(doc["segments"]) >= 4
+    assert all(len(s["text"]) <= 84 and s["end"] - s["start"] <= 7.0 for s in doc["segments"])
+    assert " ".join(s["text"] for s in doc["segments"]) == text
+
+
+def test_slow_speech_longer_than_7_seconds_splits_by_time():
+    text = "well I think that maybe we could try it again tomorrow"   # 54 characters over 9 s
+    doc = build_segments(transcript([timed(text, 10.0, seconds_per_char=0.13, gap=0.3)]), [], video_duration=30.0)
+    assert len(doc["segments"]) == 2
+    assert all(s["end"] - s["start"] <= 7.0 for s in doc["segments"])
+    durations = [s["end"] - s["start"] for s in doc["segments"]]
+    assert abs(durations[0] - durations[1]) < 1.0
+
+
+# The test video's opening line as Whisper wrote it without punctuation: 70 characters over 10.9 s
+OPENING = "みなさんこんにちはくまがいもなですイージージャパニーズは仙台からお送りします今日は街の人たちに日本についてどう思っているか聞いてみたいと思います"
+
+
+def test_japanese_line_splits_between_phrases():
+    from subtitles_generator.groupers import group_into_phrases
+
+    units = timed(OPENING, 1.883, seconds_per_char=0.13, gap=0.025, separator="")
+    t = transcript([units], language="ja")
+    doc = build_segments(t, [], video_duration=42.0)
+    assert len(doc["segments"]) >= 2
+    assert all(s["end"] - s["start"] <= 7.0 for s in doc["segments"])
+    assert "".join(s["text"] for s in doc["segments"]) == OPENING
+    phrases = [p["word"] for p in group_into_phrases([{**u, "block": 0} for u in units], "ja")]
+    starts = {len("".join(phrases[:i])) for i in range(len(phrases))}
+    offset = 0
+    for s in doc["segments"]:
+        assert offset in starts                              # every part starts where a phrase starts
+        offset += len(s["text"])
+

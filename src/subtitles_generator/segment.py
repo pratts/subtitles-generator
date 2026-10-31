@@ -11,13 +11,18 @@ from subtitles_generator.groupers import group_into_phrases
 NO_SPACE_LANGUAGES = {"ja", "zh", "yue"}
 SENTENCE_END = ("。", "！", "？", "!", "?", ".", "…")
 CLAUSE_END = ("、", "，", ",", ";", "；", ":", "：")
+# One subtitle shows at most 2 lines of 42 characters, for at most 7 s
+SUBTITLE_MAX_CHARS = 2 * 42
+SUBTITLE_MAX_DURATION = 7.0
 
 
 # === Step 3b: Build dubbing segments from timed words and speaker turns ===
 def build_segments(transcript: dict, turns: list[dict], video_duration: float | None = None,
                    min_turn: float = 0.5, pause: float = 0.35, min_duration: float = 1.5,
                    max_duration: float = 12.0, merge_gap: float = 1.0, weak_turn: float = 1.0,
-                   min_support: float = 0.5, min_turn_length: float = 0.1) -> dict:
+                   min_support: float = 0.5, min_turn_length: float = 0.1,
+                   subtitle_max_chars: int = SUBTITLE_MAX_CHARS,
+                   subtitle_max_duration: float = SUBTITLE_MAX_DURATION) -> dict:
     """
     Turn word-level transcript + diarization into sentence-level, single-speaker dubbing segments.
     - min_turn: speaker runs shorter than this (s) are treated as diarization noise and absorbed by a neighbour
@@ -30,6 +35,8 @@ def build_segments(transcript: dict, turns: list[dict], video_duration: float | 
       speaker changes, so this keeps a question asked in pieces ("はい" / "思う" / "日本のいいところ")
       from becoming sub-second lines that can't be translated or dubbed on their own
     - max_duration: longer segments are split at their best internal pause or clause boundary
+    - subtitle_max_chars / subtitle_max_duration: segments too long for one subtitle are then split at the
+      word gap nearest their middle, until every part fits
     """
     no_spaces = transcript["language"] in NO_SPACE_LANGUAGES
     words = _flatten_words(transcript)
@@ -44,6 +51,8 @@ def build_segments(transcript: dict, turns: list[dict], video_duration: float | 
     segments = _split(words, pause)
     segments = _merge_short(segments, min_duration, max_duration, merge_gap)
     segments = [part for seg in segments for part in _split_long(seg, max_duration, min_duration)]
+    segments = [part for seg in segments
+                for part in _split_for_subtitles(seg, subtitle_max_chars, subtitle_max_duration, no_spaces)]
 
     return _document(transcript, segments, video_duration, no_spaces)
 
@@ -229,6 +238,29 @@ def _split_long(seg: list[dict], max_duration: float, min_duration: float) -> li
     return _split_long(seg[:k + 1], max_duration, min_duration) + _split_long(seg[k + 1:], max_duration, min_duration)
 
 
+def _text(seg: list[dict], no_spaces: bool) -> str:
+    return ("" if no_spaces else " ").join(w["word"].strip() for w in seg)
+
+
+def _split_for_subtitles(seg: list[dict], max_chars: int, max_duration: float, no_spaces: bool) -> list[list[dict]]:
+    """
+    Split a segment that is too long for one subtitle between two words, nearest its middle: by characters when
+    the text is too long, else by time. Each part keeps its own words' timing. Words (phrases for Japanese and
+    Chinese) are never split, so a single over-long word stays as it is.
+    """
+    too_long = len(_text(seg, no_spaces)) > max_chars
+    if len(seg) < 2 or not (too_long or _duration(seg) > max_duration):
+        return [seg]
+    if too_long:
+        half = len(_text(seg, no_spaces)) / 2
+        k = min(range(len(seg) - 1), key=lambda k: abs(len(_text(seg[:k + 1], no_spaces)) - half))
+    else:
+        middle = (seg[0]["start"] + seg[-1]["end"]) / 2
+        k = min(range(len(seg) - 1), key=lambda k: abs((seg[k]["end"] + seg[k + 1]["start"]) / 2 - middle))
+    return (_split_for_subtitles(seg[:k + 1], max_chars, max_duration, no_spaces)
+            + _split_for_subtitles(seg[k + 1:], max_chars, max_duration, no_spaces))
+
+
 def _document(transcript: dict, segments: list[list[dict]], video_duration: float | None,
               no_spaces: bool) -> dict:
     out = []
@@ -242,7 +274,7 @@ def _document(transcript: dict, segments: list[list[dict]], video_duration: floa
             "end": round(end, 3),
             "duration": round(end - start, 3),
             "gap_after": round(next_start - end, 3) if next_start is not None else None,
-            "text": ("" if no_spaces else " ").join(w["word"].strip() for w in seg),
+            "text": _text(seg, no_spaces),
             "words": [{"word": w["word"], "start": round(w["start"], 3), "end": round(w["end"], 3),
                        "score": w.get("score")} for w in seg],
         })
