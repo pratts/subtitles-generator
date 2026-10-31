@@ -1,0 +1,4 @@
+# Settings. Copy to config.toml (or pass --config path). Environment variables with the same name in
+# upper case (e.g. TRANSLATOR in .env) override these, and command-line flags override both.
+# Secrets (OPENAI_API_KEY, GOOGLE_APPLICATION_CREDENTIALS) belong in .env, not here.
+# Empty values ("") use the default.
