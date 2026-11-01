@@ -1,7 +1,20 @@
 import json
 import os
+import shutil
 import subprocess
+import sys
 from fractions import Fraction
+
+INSTALL_FFMPEG = {"darwin": "brew install ffmpeg", "win32": "winget install ffmpeg"}
+
+
+def missing_tools() -> str | None:
+    """Why ffmpeg can't run, or None. Extraction uses ffmpeg and ffprobe, and transcription (whisperx) ffmpeg."""
+    missing = [tool for tool in ("ffmpeg", "ffprobe") if shutil.which(tool) is None]
+    if not missing:
+        return None
+    install = INSTALL_FFMPEG.get(sys.platform, "sudo apt install ffmpeg, or your system's package manager")
+    return f"{' and '.join(missing)} not found on PATH: install ffmpeg ({install}) and run again"
 
 
 def _run(cmd: list[str]) -> str:

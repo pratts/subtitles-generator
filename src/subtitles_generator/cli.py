@@ -193,12 +193,15 @@ def subtitle(run: Run, config: dict, args):
     languages = f" → {', '.join(targets)}" if targets else ""
     print(f"🎬 Subtitling {run.video}{languages} "
           f"(translator: {config['TRANSLATOR']}); work folder: {run.work_dir}")
-    if targets:
-        # before transcribing, which can take minutes; the video's own language needs no key
+    # checked before the pipeline, so a missing tool or key stops the run before minutes of transcription
+    from subtitles_generator.media import missing_tools
+    problem = missing_tools()
+    if not problem and targets:
+        # the video's own language needs no key
         from subtitles_generator.translate import missing_credentials
         problem = missing_credentials(config["TRANSLATOR"])
-        if problem:
-            raise SystemExit(problem)
+    if problem:
+        raise SystemExit(problem)
     inputs_id = file_id(run.video)
     stages = [s for s in STAGES if s.name != "separate" or config["SEPARATE"]]
     if not targets:
