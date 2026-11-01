@@ -23,14 +23,17 @@ def read_json(path: str):
 
 
 class Run:
-    """Paths and settings for subtitling one video. Everything for the video lives in <work_dir>/<video name>/."""
+    """
+    Paths and settings for subtitling one video. Its intermediate files live in <work_dir>/<video name>/,
+    its subtitles in <output_dir>/<video name>/.
+    """
 
     def __init__(self, video: str, config: dict, work_root: str = "work", output_dir: str = "output"):
         self.video = os.path.abspath(video)
         self.config = config
         self.name = os.path.splitext(os.path.basename(video))[0]
         self.work_dir = os.path.abspath(os.path.join(work_root, self.name))
-        self.output_dir = os.path.abspath(output_dir)
+        self.output_dir = os.path.abspath(os.path.join(output_dir, self.name))
         w = lambda *p: os.path.join(self.work_dir, *p)
 
         self.metadata = w("metadata.json")
@@ -147,9 +150,9 @@ def main(argv: list[str] | None = None):
     parser.add_argument("--context", help="one-line description of the video (used by gpt)")
     parser.add_argument("--config", help="settings file (default: ./config.toml if present)")
     parser.add_argument("--work-dir", default="work", help="folder for intermediate files (default: work)")
-    parser.add_argument("--output-dir", default="output", help="folder for the subtitles (default: output)")
+    parser.add_argument("--output-dir", default="output", help="folder for the subtitles, one subfolder per video (default: output)")
     parser.add_argument("--force", action="store_true", help="re-run every stage")
-    parser.add_argument("--clean", action="store_true", help="delete this video's work folder and exit")
+    parser.add_argument("--clean", action="store_true", help="delete this video's work and output folders and exit")
     parser.add_argument("--verbose", action="store_true",
                         help="also show third-party output (always written to <work folder>/run.log)")
     args = parser.parse_args(argv)
@@ -166,11 +169,12 @@ def main(argv: list[str] | None = None):
     run = Run(args.input, config, args.work_dir, args.output_dir)
 
     if args.clean:
-        if os.path.exists(run.work_dir):
-            shutil.rmtree(run.work_dir)
-            print(f"🧹 Deleted {run.work_dir}")
-        else:
-            print(f"Nothing to delete: {run.work_dir} does not exist")
+        folders = [d for d in (run.work_dir, run.output_dir) if os.path.exists(d)]
+        for folder in folders:
+            shutil.rmtree(folder)
+            print(f"🧹 Deleted {folder}")
+        if not folders:
+            print(f"Nothing to delete: neither {run.work_dir} nor {run.output_dir} exists")
         return
 
     os.makedirs(run.work_dir, exist_ok=True)

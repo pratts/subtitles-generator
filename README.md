@@ -35,7 +35,7 @@ subtitle my-video.mp4 --to es,fr,hi            # ... and in Spanish, French and 
 subtitle my-video.mp4 --to en --from ja        # skip language detection
 subtitle my-video.mp4 --to en --translator google
 ```
-Subtitles are written to `output/<video name>.<language>.srt`, e.g. `output/my-video.ja.srt` and `output/my-video.en.srt`.
+Subtitles are written to `output/<video name>/<video name>.<language>.srt`, e.g. `output/my-video/my-video.ja.srt` and `output/my-video/my-video.en.srt`. They are named after the video, so a video player loads them when they are copied next to it.
 
 ### Names and context
 Whisper and translators often misspell names. A glossary fixes that:
@@ -54,7 +54,7 @@ Each video gets a work folder, `work/<video name>/`. Finished steps are remember
 
 ```bash
 subtitle my-video.mp4 --force      # redo everything
-subtitle my-video.mp4 --clean      # delete the video's work folder
+subtitle my-video.mp4 --clean      # delete the video's work and output folders
 subtitle my-video.mp4 --verbose    # also show the libraries' own output
 ```
 The libraries' own output is always written to `work/<video name>/run.log`. Run `subtitle --help` for all options.
