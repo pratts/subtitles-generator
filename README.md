@@ -1,10 +1,12 @@
 # subtitles-generator
+[![Tests](https://github.com/pratts/subtitles-generator/actions/workflows/tests.yml/badge.svg)](https://github.com/pratts/subtitles-generator/actions/workflows/tests.yml)
+
 Subtitles for any video, in any language.
 
 `subtitle video.mp4 --to es,fr` transcribes the video with Whisper, times every word, and writes `.srt` subtitles in the video's own language and in each language you ask for.
 
 ## Prerequisites
-- Python 3.11 or higher
+- Python 3.12 or higher
 - ffmpeg and ffprobe on your `PATH` (`brew install ffmpeg`, or `apt install ffmpeg`)
 - For translation, one of:
   - `gpt` (default): an [OpenAI API key](https://platform.openai.com/api-keys), or a local OpenAI-compatible server such as [Ollama](https://ollama.com)
@@ -16,7 +18,7 @@ No key is needed for subtitles in the video's own language.
 ```bash
 git clone git@github.com:pratts/subtitles-generator.git
 cd subtitles-generator
-python3.12 -m venv venv          # any Python 3.11 or higher
+python3.12 -m venv venv          # any Python 3.12 or higher
 source venv/bin/activate
 pip install -e . -c constraints.txt
 ```
