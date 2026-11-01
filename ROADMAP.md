@@ -4,6 +4,8 @@
 The deferred items below are ideas, not commitments.
 
 ## Phase 1: the CLI script
+Milestone: [Phase 1: CLI (done)](https://github.com/pratts/subtitles-generator/milestone/1)
+
 **Goal:** `subtitle video.mp4 --to es,fr` writes `output/<name>/<name>.<lang>.srt` for the source language and each
 target language.
 
@@ -28,6 +30,8 @@ target language.
 - CJK reading-speed and line-length rules
 
 ## Phase 2: a PyPI package
+Milestone: [Phase 2: PyPI package](https://github.com/pratts/subtitles-generator/milestone/2)
+
 **Goal:** `pip install subtitles-generator` gives a working `subtitle` command, with no clone needed.
 
 **Main work**
@@ -50,6 +54,8 @@ target language.
 - Optional extra `[diarize]` (pyannote, needs a Hugging Face token). Done: `[separate]` (Demucs, #9)
 
 ## Phase 3: a web app
+Milestone: [Phase 3: Web app](https://github.com/pratts/subtitles-generator/milestone/3)
+
 **Goal:** an upload page with a language picker, progress and download links, running on the same core code as
 the CLI.
 
