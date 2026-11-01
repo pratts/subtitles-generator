@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Subtitles for any video, in any language"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     # speech recognition with word-level timestamps (faster-whisper + VAD + wav2vec2 alignment)
     "whisperx>=3.8.6",
