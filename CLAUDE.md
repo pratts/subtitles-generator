@@ -24,7 +24,9 @@ main is protected by the "Main branch protection" ruleset
   `scripts/apply-baseline.sh pratts/subtitles-generator "<check name>"` in repo-baseline, after the check has run once.
 
 ## Workflow for each piece of work
-1. Create a GitHub issue if there isn't one.
+1. Create a GitHub issue if there isn't one, assigned to whoever creates it (`--assignee @me`) and in its phase's
+   milestone (`Phase 1: CLI`, `Phase 2: PyPI package`, `Phase 3: Web app`; see ROADMAP.md). Work between phases
+   goes into the next open phase. An existing issue without them gets them.
 2. Create a branch: `feat/issue-N-short-name`, `fix/issue-N-short-name` or `docs/issue-N-short-name`.
 3. Implement.
 4. Run the tests (`venv/bin/pytest -q`). Each new test must fail without the change it covers.
@@ -36,7 +38,8 @@ Only when the user says so:
 - Make a GPG-signed commit (`git commit -S`).
 - For a non-trivial commit, add a git note (`git notes add`) explaining why it is built this way, not what changed.
 - Push the branch and `refs/notes/commits`.
-- Open the PR.
+- Open the PR, assigned to whoever opens it and in the issue's milestone
+  (`gh pr create --assignee @me --milestone "<milestone>"`).
 
 ## "Merged. Sync…"
 1. Check that the PR really is merged (`gh pr view N --json state,mergedAt`).
