@@ -1,0 +1,12 @@
+torch comes from the PyTorch CPU index (--extra-index-url .../whl/cpu): the default Linux wheel pulls several
+GB of CUDA libraries the tests never use. torch==2.8.0 in constraints.txt still matches 2.8.0+cpu (a local
+version label is ignored by ==), and pip picks +cpu because it sorts above the plain version. A dry-run
+resolve for Linux/3.12 confirmed all pins and no nvidia packages before this was pushed.
+
+The install uses constraints.txt, the documented install, not whatever pip picks that day; so CI tests what
+users get, and a new upstream release can't break it.
+
+Only Python 3.12: numpy 2.5.3 in constraints.txt requires it, so requires-python moved to >=3.12 rather
+than keeping 3.11 with an unpinned second job that would test different versions and break on new releases.
+
+The job is called "tests": that is the check name to pass to repo-baseline's apply-baseline.sh.
