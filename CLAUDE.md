@@ -20,8 +20,10 @@ main is protected by the "Main branch protection" ruleset
 - The user merges their own PRs (bypass for PRs only). Use a merge commit, not squash or rebase: those create new
   commits on main and leave the git notes on commits that are no longer on main.
 - A PR's branch is deleted on GitHub automatically when it merges.
-- No status checks are required yet. When CI is added, re-run
-  `scripts/apply-baseline.sh pratts/subtitles-generator "<check name>"` in repo-baseline, after the check has run once.
+- The `tests` check (`.github/workflows/tests.yml`) must pass, on a branch up to date with main: after another PR
+  merges, update the branch (merge main into it) before merging. To add or rename a check, re-run
+  `scripts/apply-baseline.sh pratts/subtitles-generator "tests" "<new check>"` in repo-baseline, listing every
+  required check, after the new one has run once.
 
 ## Workflow for each piece of work
 1. Create a GitHub issue if there isn't one, assigned to whoever creates it (`--assignee @me`) and in its phase's
