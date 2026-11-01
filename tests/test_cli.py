@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from subtitles_generator import cli, translate
+from subtitles_generator import cli, media, translate
 
 
 def segment(text):
@@ -47,6 +47,7 @@ def fake_stages(monkeypatch, tmp_path):
 
     monkeypatch.setattr(cli, "STAGES", [dataclasses.replace(s, run=recorder(s.name)) for s in cli.STAGES])
     monkeypatch.setattr(translate, "missing_credentials", lambda name: None)
+    monkeypatch.setattr(media, "missing_tools", lambda: None)
     for name in ("SOURCE_LANGUAGE", "TARGET_LANGUAGES", "TRANSLATOR", "SEPARATE"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.chdir(tmp_path)
@@ -132,3 +133,11 @@ def test_clean_deletes_only_this_videos_work_and_output_folders(fake_stages, tmp
     cli.main(["talk.mp4", "--clean"])
     assert not os.path.exists("work/talk") and not os.path.exists("output/talk")
     assert os.path.exists("work/other") and os.path.exists("output/other/other.ja.srt")
+
+
+def test_missing_ffmpeg_stops_before_any_stage(fake_stages, monkeypatch):
+    monkeypatch.setattr(media, "missing_tools", lambda: "ffmpeg not found")
+    with pytest.raises(SystemExit, match="ffmpeg not found"):
+        cli.main(["talk.mp4"])
+    assert fake_stages == []
+    cli.main(["talk.mp4", "--clean"])               # --clean needs no ffmpeg
