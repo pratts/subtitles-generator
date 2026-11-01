@@ -62,13 +62,13 @@ def test_target_languages_are_split_and_deduplicated():
 def test_source_language_only_without_targets(fake_stages):
     cli.main(["talk.mp4"])
     assert fake_stages == ["extract", "transcribe", "segment"]
-    assert os.path.exists("output/talk.ja.srt")
+    assert os.path.exists("output/talk/talk.ja.srt")
 
 
 def test_each_language_is_translated_once_and_kept(fake_stages):
     cli.main(["talk.mp4", "--to", "es,fr"])
     assert fake_stages == ["extract", "transcribe", "segment", "translate:es", "translate:fr"]
-    assert os.path.exists("output/talk.es.srt") and os.path.exists("output/talk.fr.srt")
+    assert os.path.exists("output/talk/talk.es.srt") and os.path.exists("output/talk/talk.fr.srt")
 
     fake_stages.clear()
     cli.main(["talk.mp4", "--to", "es,fr"])
@@ -88,12 +88,12 @@ def test_force_reruns_everything_once_and_every_translation(fake_stages):
 def test_output_follows_the_selected_translator(fake_stages):
     cli.main(["talk.mp4", "--to", "es", "--translator", "google"])
     cli.main(["talk.mp4", "--to", "es", "--translator", "gpt"])
-    assert srt_text("output/talk.es.srt") == "gpt es"
+    assert srt_text("output/talk/talk.es.srt") == "gpt es"
     fake_stages.clear()
     cli.main(["talk.mp4", "--to", "es", "--translator", "google"])
     assert fake_stages == []                      # google's translation is reused...
-    assert srt_text("output/talk.es.srt") == "google es"    # ...and written again
-    assert srt_text("output/talk.ja.srt") == "こんにちは"
+    assert srt_text("output/talk/talk.es.srt") == "google es"    # ...and written again
+    assert srt_text("output/talk/talk.ja.srt") == "こんにちは"
 
 
 def test_separation_is_opt_in_and_switching_it_transcribes_again(fake_stages):
@@ -122,3 +122,13 @@ def test_a_missing_key_stops_before_transcribing(fake_stages, monkeypatch):
     assert fake_stages == []
     cli.main(["talk.mp4"])                          # the video's own language needs no key
     assert fake_stages == ["extract", "transcribe", "segment"]
+
+
+def test_clean_deletes_only_this_videos_work_and_output_folders(fake_stages, tmp_path):
+    cli.main(["talk.mp4"])
+    (tmp_path / "other.mp4").write_bytes(b"video")
+    cli.main(["other.mp4"])
+    assert os.path.exists("output/talk/talk.ja.srt") and os.path.exists("output/other/other.ja.srt")
+    cli.main(["talk.mp4", "--clean"])
+    assert not os.path.exists("work/talk") and not os.path.exists("output/talk")
+    assert os.path.exists("work/other") and os.path.exists("output/other/other.ja.srt")

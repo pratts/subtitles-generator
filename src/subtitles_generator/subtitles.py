@@ -16,6 +16,6 @@ def write_subtitles(document: dict, field: str, path: str) -> str:
 
 
 def subtitles_path(video_path: str, language: str, output_dir: str) -> str:
-    """output/<video name>.<language>.srt"""
+    """<output_dir>/<video name>.<language>.srt: named after the video, so players load it next to the video"""
     name = os.path.splitext(os.path.basename(video_path))[0]
     return os.path.join(output_dir, f"{name}.{language}.srt")

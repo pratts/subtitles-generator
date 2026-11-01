@@ -4,7 +4,7 @@
 The deferred items below are ideas, not commitments.
 
 ## Phase 1: the CLI script
-**Goal:** `subtitle video.mp4 --to es,fr` writes `output/<name>.<lang>.srt` for the source language and each
+**Goal:** `subtitle video.mp4 --to es,fr` writes `output/<name>/<name>.<lang>.srt` for the source language and each
 target language.
 
 **Main work**
