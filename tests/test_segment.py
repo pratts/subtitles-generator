@@ -202,3 +202,13 @@ def test_unmatched_character_after_a_pause_is_moved_back_to_its_word():
     assert first["text"] == "聞いてみたいと思います。"
     assert first["end"] < 13.0
     assert doc["segments"][1]["text"] == "こんにちは。" and doc["segments"][1]["start"] >= 25.9
+
+
+def test_japanese_keeps_spaces_between_latin_words():
+    # wav2vec2 aligns Japanese per character, so the space in Whisper's text has no unit of its own
+    text = "Easy Japaneseは仙台から日本語 3 回"
+    chars = [c for c in text if c != " "]
+    t = transcript([words(*[(c, i * 0.1, i * 0.1 + 0.1) for i, c in enumerate(chars)])], language="ja")
+    t["segments"][0]["text"] = text
+    doc = build_segments(t, [], video_duration=5.0)
+    assert "".join(s["text"] for s in doc["segments"]) == "Easy Japaneseは仙台から日本語3回"
