@@ -21,10 +21,9 @@ def missing_credentials() -> str | None:
 
 
 def translate(items: list[dict], source_language: str, target_language: str,
-              glossary: dict | None = None, context: str | None = None) -> dict[int, dict]:
+              glossary: dict | None = None, context: str | None = None) -> dict[int, str]:
     """
-    Machine-translate each item's text. Returns {id: {"raw", "polished"}}; both are the same,
-    because plain machine translation does not adapt lines for dubbing.
+    Machine-translate each item's text. Returns {id: translation}.
     Glossary and context are not supported by the v2 API and are ignored.
     """
     results = {}
@@ -37,5 +36,5 @@ def translate(items: list[dict], source_language: str, target_language: str,
             raise RuntimeError(f"Google returned {len(response)} translations for {len(batch)} texts")
         for item, result in zip(batch, response):
             text = result["translatedText"].strip()
-            results[item["id"]] = {"raw": text, "polished": text}
+            results[item["id"]] = text
     return results

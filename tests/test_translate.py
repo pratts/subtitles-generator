@@ -40,17 +40,15 @@ def test_every_id_is_matched_and_missing_ids_are_retried(fake_openai, tmp_path, 
 
     def reply(payload, call):
         ids = [line["id"] for line in payload["lines"]]
-        out = [{"id": i, "literal_translation": f"lit {i}", "dubbing_line": f"dub {i}"} for i in ids]
+        out = [{"id": i, "translation": f"line {i} in English"} for i in ids]
         if call == 1:  # drop one id, blank one, add an unknown one, and shuffle
-            out = [{**o, "dubbing_line": ""} if o["id"] == 5 else o for o in out if o["id"] != 3][::-1]
-            out.append({"id": 999, "literal_translation": "x", "dubbing_line": "x"})
+            out = [{**o, "translation": ""} if o["id"] == 5 else o for o in out if o["id"] != 3][::-1]
+            out.append({"id": 999, "translation": "x"})
         return {"translations": out}
 
     calls = fake_openai(reply)
-    doc = T.translate_segments(segments_doc(120), str(tmp_path / "t.json"), str(tmp_path / "raw.srt"),
-                               str(tmp_path / "pol.srt"), translator="gpt", target_language="en")
-    assert [s["translation"] for s in doc["segments"]] == [f"dub {i}" for i in range(120)]
-    assert [s["raw"] for s in doc["segments"]] == [f"lit {i}" for i in range(120)]
+    doc = T.translate_segments(segments_doc(120), str(tmp_path / "t.json"), translator="gpt", target_language="en")
+    assert [s["translation"] for s in doc["segments"]] == [f"line {i} in English" for i in range(120)]
     retried = [line["id"] for line in json.loads(calls[1]["messages"][1]["content"])["lines"]]
     assert retried == [3, 5]
     assert calls[0]["response_format"]["json_schema"]["strict"] is True
@@ -59,17 +57,18 @@ def test_every_id_is_matched_and_missing_ids_are_retried(fake_openai, tmp_path, 
 def test_gives_up_when_an_id_never_comes_back(fake_openai, tmp_path):
     fake_openai(lambda payload, call: {"translations": []})
     with pytest.raises(RuntimeError, match="No translation returned"):
-        T.translate_segments(segments_doc(2), str(tmp_path / "t.json"), str(tmp_path / "r.srt"),
-                             str(tmp_path / "p.srt"), translator="gpt")
+        T.translate_segments(segments_doc(2), str(tmp_path / "t.json"), translator="gpt")
 
 
-def test_shorten_returns_the_shorter_line(fake_openai):
-    fake_openai(lambda payload, call: {"text": "Short."})
-    doc = {"translator": "gpt", "source_language": "ja", "target_language": "en", "glossary": {}, "context": "",
-           "segments": [{"id": 0, "speaker": "S", "duration": 1.0, "source_text": "x",
-                         "translation": "A much longer line than allowed", "max_chars": 30, "fits": False}]}
-    assert T.shorten(doc, 0, 10) == "Short."
-    assert doc["segments"][0]["fits"] is True
+def test_subtitle_translation_is_kept_whole(fake_openai, tmp_path):
+    # a faithful line much longer than a 1.5 s dubbing slot allowed: subtitles keep it, with no shortening request
+    long = "I would really like to ask the people in this town what they honestly think about Japan."
+    calls = fake_openai(lambda payload, call: {"translations": [{"id": 0, "translation": long}]})
+    doc = T.translate_segments(segments_doc(1), str(tmp_path / "t.json"), translator="gpt")
+    assert doc["segments"][0]["translation"] == long
+    assert len(calls) == 1
+    assert "subtitles" in calls[0]["messages"][0]["content"]
+    assert json.loads(calls[0]["messages"][1]["content"])["lines"] == [{"id": 0, "duration": 1.5, "text": "line 0"}]
 
 
 def test_google_batches_and_keeps_order(monkeypatch, tmp_path):
@@ -85,16 +84,9 @@ def test_google_batches_and_keeps_order(monkeypatch, tmp_path):
 
     client = FakeClient()
     monkeypatch.setattr(google, "_client", lambda: client)
-    doc = T.translate_segments(segments_doc(300), str(tmp_path / "t.json"), str(tmp_path / "r.srt"),
-                               str(tmp_path / "p.srt"), translator="google")
+    doc = T.translate_segments(segments_doc(300), str(tmp_path / "t.json"), translator="google")
     assert client.batches == [128, 128, 44]
     assert doc["segments"][299]["translation"] == "LINE 299"
-
-
-def test_char_budget_scales_with_duration_and_language():
-    assert T.char_budget(2.0, "en") == 28
-    assert T.char_budget(2.0, "ja") == 14
-    assert T.char_budget(0.1, "en") == T.MIN_CHARS
 
 
 def test_gpt_needs_a_key_unless_a_local_server_is_set(monkeypatch):

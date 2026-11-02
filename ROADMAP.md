@@ -18,7 +18,8 @@ target language.
 - Segments come from dubbing rules (whole sentences), so lines can be long until the split step lands.
 - Translations keep the source segment's timing; word order differs between languages, so a sentence split
   across segments can show words before they are spoken.
-- The gpt prompt and character budget in `translate.py` are written for dubbing.
+- The gpt prompt and character budget in `translate.py` were written for dubbing. Done: a subtitle prompt with no
+  budget (#23)
 - Whisper can invent text over music or silence, more so on mlx, which has no VAD.
 
 **Deferred, add if real output shows a need**
@@ -28,6 +29,8 @@ target language.
 - Merge-first split-back: put a translated sentence into its segments' combined slot before splitting it
 - gpt checks: exactly one line per segment, with a retry and a proportional-split fallback
 - CJK reading-speed and line-length rules
+- A reading-speed budget for gpt translations (about 17 characters/s), with shortening beyond it: one French line
+  in the test video reads at 22.7 characters/s
 
 ## Phase 2: a PyPI package
 Milestone: [Phase 2: PyPI package](https://github.com/pratts/subtitles-generator/milestone/2)

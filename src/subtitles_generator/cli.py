@@ -103,10 +103,8 @@ def segment(run: Run):
 def translate(run: Run):
     from subtitles_generator.translate import translate_segments
     c = run.config
-    base = os.path.join(run.translation_dir, run.target())
-    translate_segments(read_json(run.segments), run.translation(), f"{base}.raw.srt", f"{base}.polished.srt",
-                       translator=c["TRANSLATOR"], target_language=run.target(), glossary=c["GLOSSARY"],
-                       context=c["VIDEO_CONTEXT"] or None)
+    translate_segments(read_json(run.segments), run.translation(), translator=c["TRANSLATOR"],
+                       target_language=run.target(), glossary=c["GLOSSARY"], context=c["VIDEO_CONTEXT"] or None)
 
 
 STAGES = [
