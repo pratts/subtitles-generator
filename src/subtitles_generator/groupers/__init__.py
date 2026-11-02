@@ -43,11 +43,14 @@ def _group_block(units: list[dict], tokens) -> list[dict]:
     for u in units:
         groups.setdefault(owner[offset], []).append(u)
         offset += len(u["word"])
-    return [{"word": "".join(u["word"] for u in members),
+    # keep the spaces between Latin words that segment.py marked with space_before
+    return [{"word": "".join((" " if i and u.get("space_before") else "") + u["word"]
+                             for i, u in enumerate(members)),
              "start": members[0]["start"],
              "end": members[-1]["end"],
              "score": _mean([u.get("score") for u in members]),
-             "block": members[0]["block"]}
+             "block": members[0]["block"],
+             **({"space_before": True} if members[0].get("space_before") else {})}
             for members in groups.values()]
 
 

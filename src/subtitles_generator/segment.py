@@ -64,8 +64,10 @@ def _is_punctuation(text: str) -> bool:
 
 def _flatten_words(transcript: dict) -> list[dict]:
     """All words in order, tagged with their transcript block. Punctuation is attached to the word before it."""
+    no_spaces = transcript["language"] in NO_SPACE_LANGUAGES
     words = []
     for block in transcript["segments"]:
+        first = len(words)
         for w in block["words"]:
             text = w["word"].strip()
             if not text:
@@ -74,7 +76,30 @@ def _flatten_words(transcript: dict) -> list[dict]:
                 words[-1]["word"] += text
                 continue
             words.append({**w, "block": block["id"]})
+        if no_spaces:
+            _mark_spaces(words[first:], block.get("text", ""))
     return words
+
+
+def _is_latin(c: str) -> bool:
+    return c.isdigit() or unicodedata.name(c, "").startswith("LATIN")
+
+
+def _mark_spaces(units: list[dict], text: str):
+    """
+    Characters of Japanese and Chinese are aligned one by one, so the space between two Latin words
+    ("Easy Japanese") is lost. Mark a unit that has a space before it in Whisper's text, between Latin letters
+    or digits, so joining keeps it.
+    """
+    pos = 0
+    for prev, u in zip([None] + units, units):
+        start = text.find(u["word"], pos)
+        if start < 0:
+            continue
+        if (prev and start > pos and text[pos:start].isspace()
+                and _is_latin(prev["word"][-1]) and _is_latin(u["word"][0])):
+            u["space_before"] = True
+        pos = start + len(u["word"])
 
 
 def _is_ideograph(text: str) -> bool:
@@ -254,7 +279,9 @@ def _split_long(seg: list[dict], max_duration: float, min_duration: float) -> li
 
 
 def _text(seg: list[dict], no_spaces: bool) -> str:
-    return ("" if no_spaces else " ").join(w["word"].strip() for w in seg)
+    if no_spaces:
+        return "".join((" " if i and w.get("space_before") else "") + w["word"].strip() for i, w in enumerate(seg))
+    return " ".join(w["word"].strip() for w in seg)
 
 
 def _split_for_subtitles(seg: list[dict], max_chars: int, max_duration: float, no_spaces: bool) -> list[list[dict]]:
