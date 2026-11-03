@@ -141,3 +141,17 @@ def test_missing_ffmpeg_stops_before_any_stage(fake_stages, monkeypatch):
         cli.main(["talk.mp4"])
     assert fake_stages == []
     cli.main(["talk.mp4", "--clean"])               # --clean needs no ffmpeg
+
+
+def test_the_videos_own_language_is_not_translated_over_its_transcript(fake_stages):
+    cli.main(["talk.mp4", "--to", "ja,en"])          # ja is detected by transcription
+    assert fake_stages == ["extract", "transcribe", "segment", "translate:en"]
+    assert srt_text("output/talk/talk.ja.srt") == "こんにちは"
+    assert srt_text("output/talk/talk.en.srt") == "gpt en"
+
+
+def test_the_given_source_language_in_targets_needs_no_key(fake_stages, monkeypatch):
+    monkeypatch.setattr(translate, "missing_credentials", lambda name: f"{name} needs a key")
+    cli.main(["talk.mp4", "--from", "ja", "--to", "ja"])
+    assert fake_stages == ["extract", "transcribe", "segment"]
+    assert srt_text("output/talk/talk.ja.srt") == "こんにちは"

@@ -87,7 +87,7 @@ subtitle my-video.mp4 --to es,fr,hi            # ... and in Spanish, French and 
 subtitle my-video.mp4 --to en --from ja        # skip language detection
 subtitle my-video.mp4 --to en --translator google
 ```
-Subtitles are written to `output/<video name>/<video name>.<language>.srt`. They are named after the video, so a video player loads them when they are copied next to it. Run `subtitle --help` for all options.
+Subtitles in the video's own language are always written, so `--to` only needs the other languages; the video's own language in `--to` is skipped. Subtitles are written to `output/<video name>/<video name>.<language>.srt`. They are named after the video, so a video player loads them when they are copied next to it. Run `subtitle --help` for all options.
 
 ### Names and context
 Whisper and translators often misspell names. A glossary fixes that:
