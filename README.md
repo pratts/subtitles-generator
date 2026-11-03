@@ -155,7 +155,7 @@ For a Japanese video, the downloads added about 4 minutes at 12 MB/s. Later runs
 pip install -e ".[dev]" -c constraints.txt
 pytest
 ```
-See [ROADMAP.md](ROADMAP.md) for what is planned.
+See [CONTRIBUTING.md](CONTRIBUTING.md) to send a change, and [ROADMAP.md](ROADMAP.md) for what is planned.
 
 ## License
 MIT

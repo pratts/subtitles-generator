@@ -1,0 +1,46 @@
+name: Bug report
+description: The CLI fails, or the subtitles are wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never paste `.env`, API keys or Google service account files.** Check any log before you paste it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead. For wrong subtitles, paste the lines from the `.srt`.
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      placeholder: subtitle my-video.mp4 --to en --glossary glossary.json
+    validations:
+      required: true
+  - type: input
+    id: video
+    attributes:
+      label: Video
+      description: Its language and length, and a link if it is public.
+      placeholder: Japanese, 3 min, street interview with background music
+  - type: input
+    id: system
+    attributes:
+      label: OS and Python version
+      placeholder: macOS 15 on Apple Silicon, Python 3.12.8
+    validations:
+      required: true
+  - type: textarea
+    id: settings
+    attributes:
+      label: Settings changed from the defaults
+      description: From `config.toml` or `.env`, names and values, without keys (e.g. `asr_backend = "mlx"`).
+  - type: textarea
+    id: log
+    attributes:
+      label: run.log
+      description: The relevant part of `work/<video name>/run.log`, e.g. the error at the end.
+      render: text
