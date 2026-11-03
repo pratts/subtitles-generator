@@ -1,0 +1,16 @@
+name: Feature request
+description: Something the CLI should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you need
+      description: What you are trying to do, and where the CLI falls short. A video where the output goes wrong helps most.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: How it could work, if you have an idea.

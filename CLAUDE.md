@@ -28,7 +28,9 @@ main is protected by the "Main branch protection" ruleset
 ## Workflow for each piece of work
 1. Create a GitHub issue if there isn't one, assigned to whoever creates it (`--assignee @me`) and in its phase's
    milestone (`Phase 1: CLI`, `Phase 2: PyPI package`, `Phase 3: Web app`; see ROADMAP.md). Work between phases
-   goes into the next open phase. An existing issue without them gets them.
+   goes into the next open phase. An existing issue without them gets them. Outside contributors can't set
+   assignees or milestones: when they open an issue or PR, the owner sets its milestone afterwards, and assigns it to
+   its author (GitHub allows that once they have commented on it).
 2. Create a branch: `feat/issue-N-short-name`, `fix/issue-N-short-name` or `docs/issue-N-short-name`.
 3. Implement.
 4. Run the tests (`venv/bin/pytest -q`). Each new test must fail without the change it covers.
