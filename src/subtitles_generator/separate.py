@@ -3,9 +3,12 @@ import random
 from pathlib import Path
 
 import demucs.api
+import demucs.hf
 import numpy as np
 import torch
 from tqdm import tqdm
+
+from subtitles_generator.downloads import announce, hf_cached
 
 
 # === Separate speech from background using Demucs ===
@@ -19,6 +22,7 @@ def separate_vocals(audio_path: str, vocals_output_path: str, background_output_
     and settings always give the same vocals, and with them the same transcript and segments.
     """
     print(f"🔍 Loading Demucs model '{model}'...")
+    announce(f"the Demucs model {model}", _demucs_cached(model))
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -44,6 +48,12 @@ def separate_vocals(audio_path: str, vocals_output_path: str, background_output_
         # clamp instead of per-stem rescaling, so vocals/background keep their original relative levels
         demucs.api.save_audio(wav, output_path, samplerate=separator.samplerate, clip="clamp")
         print(f"✅ Saved {output_path}")
+
+
+def _demucs_cached(model: str) -> bool:
+    """Demucs loads its models from the Hugging Face repo [namespace/]<model>, as in demucs.hf.get_hf_model."""
+    namespace, name = model.split("/", 1) if "/" in model else (demucs.hf.DEFAULT_NAMESPACE, model)
+    return hf_cached(f"{namespace}/{demucs.hf.hf_repo_name(name)}")
 
 
 class _Progress:

@@ -22,7 +22,17 @@ python3.12 -m venv venv          # any Python 3.12 or higher
 source venv/bin/activate
 pip install -e . -c constraints.txt
 ```
-`constraints.txt` holds the versions tested together. The install is large (PyTorch and WhisperX), and the Whisper and alignment models are downloaded on the first run.
+`constraints.txt` holds the versions tested together. The install is large (PyTorch and WhisperX).
+
+### First run
+The models are downloaded the first time they are needed, each with a progress bar, then cached:
+| Model | Size | Needed | Cache |
+|---|---|---|---|
+| Whisper `large-v3-turbo` | 1.6 GB | always | `~/.cache/huggingface` (`HF_HOME`) |
+| wav2vec2 aligner, one per source language | 0.4 GB (en, fr, de, es, it) to 1.3 GB (ja) | always | `~/.cache/torch` (`TORCH_HOME`) for en, fr, de, es, it; `~/.cache/huggingface` for the others |
+| Demucs `htdemucs_ft` | 0.3 GB | with `--separate` | `~/.cache/huggingface` |
+
+For a Japanese video, the downloads added about 4 minutes at 12 MB/s. Later runs don't download.
 
 ## Configuration
 1. Copy `.env.example` to `.env` and fill in `OPENAI_API_KEY` (for `gpt`) or `GOOGLE_APPLICATION_CREDENTIALS` (the path to your key file, for `google`).

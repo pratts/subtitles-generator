@@ -5,6 +5,8 @@ import torch
 import whisperx
 from datetime import timedelta
 
+from subtitles_generator.downloads import announce, hf_cached, torch_hub_cached
+
 ASR_SAMPLE_RATE = 16000
 MLX_MODELS = {
     "large-v3-turbo": "mlx-community/whisper-large-v3-turbo",
@@ -44,6 +46,7 @@ def transcribe(audio_path: str, transcript_output_path: str, srt_output_path: st
     print(f"🌐 Language: {detected_language}")
 
     print("📐 Aligning words to audio...")
+    announce(f"the alignment model for '{detected_language}'", _align_model_cached(detected_language))
     align_model, align_metadata = whisperx.load_align_model(language_code=detected_language, device=device)
     aligned = whisperx.align(result["segments"], align_model, align_metadata, audio, device,
                              return_char_alignments=False)
@@ -82,6 +85,7 @@ def asr_prompt(glossary: dict | None) -> str | None:
 def _transcribe_whisperx(audio, model_name: str, language: str | None, device: str, prompt: str | None) -> dict:
     # ctranslate2 has no Apple GPU support, so use int8 on CPU and float16 on CUDA
     compute_type = "float16" if device == "cuda" else "int8"
+    announce(f"the Whisper model {model_name}", os.path.isdir(model_name) or _faster_whisper_cached(model_name))
     model = whisperx.load_model(model_name, device, compute_type=compute_type, language=language,
                                 asr_options={"initial_prompt": prompt})
     return model.transcribe(audio, batch_size=16 if device == "cuda" else 4, language=language)
@@ -91,11 +95,35 @@ def _transcribe_mlx(audio, model_name: str, language: str | None, prompt: str | 
     import mlx_whisper  # only available on Apple Silicon
 
     repo = MLX_MODELS.get(model_name, model_name)
+    announce(f"the Whisper model {model_name}", os.path.isdir(repo) or hf_cached(repo))
     result = mlx_whisper.transcribe(audio, path_or_hf_repo=repo, language=language,
                                     condition_on_previous_text=False, initial_prompt=prompt)
     segments = [{"start": s["start"], "end": s["end"], "text": s["text"]}
                 for s in result["segments"] if s["text"].strip()]
     return {"segments": segments, "language": result["language"]}
+
+
+def _faster_whisper_cached(model_name: str) -> bool:
+    from faster_whisper.utils import download_model
+    from huggingface_hub.errors import LocalEntryNotFoundError
+
+    try:
+        download_model(model_name, local_files_only=True)
+        return True
+    except LocalEntryNotFoundError:
+        return False
+
+
+def _align_model_cached(language: str) -> bool:
+    """WhisperX's default aligner for the language comes from torchaudio (en, fr, de, es, it) or Hugging Face."""
+    import torchaudio
+    from whisperx.alignment import DEFAULT_ALIGN_MODELS_HF, DEFAULT_ALIGN_MODELS_TORCH
+
+    if language in DEFAULT_ALIGN_MODELS_TORCH:
+        return torch_hub_cached(torchaudio.pipelines.__dict__[DEFAULT_ALIGN_MODELS_TORCH[language]]._path)
+    if language in DEFAULT_ALIGN_MODELS_HF:
+        return hf_cached(DEFAULT_ALIGN_MODELS_HF[language])
+    return True  # no default aligner: WhisperX raises its own error
 
 
 def _clean_segment(index: int, segment: dict) -> dict:
