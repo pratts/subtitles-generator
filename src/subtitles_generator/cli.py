@@ -186,8 +186,20 @@ def main(argv: list[str] | None = None):
         restore()
 
 
+def _without_source(targets: list[str], source: str) -> list[str]:
+    """
+    The video's own language needs no translation: its subtitles are the transcript, written on every run.
+    Translating it would also write over that file, with gpt's rewording of what was said.
+    """
+    if source in targets:
+        print(f"ℹ️  {source} is the video's language: its subtitles are the transcript, not translated")
+    return [t for t in targets if t != source]
+
+
 def subtitle(run: Run, config: dict, args):
     targets = target_languages(config["TARGET_LANGUAGES"])
+    if config["SOURCE_LANGUAGE"]:
+        targets = _without_source(targets, config["SOURCE_LANGUAGE"])
     languages = f" → {', '.join(targets)}" if targets else ""
     print(f"🎬 Subtitling {run.video}{languages} "
           f"(translator: {config['TRANSLATOR']}); work folder: {run.work_dir}")
@@ -202,17 +214,15 @@ def subtitle(run: Run, config: dict, args):
         raise SystemExit(problem)
     inputs_id = file_id(run.video)
     stages = [s for s in STAGES if s.name != "separate" or config["SEPARATE"]]
-    if not targets:
-        Pipeline(stages, run.work_dir, config["TRANSLATOR"]).run(run, config, to_stage="segment", force=args.force,
-                                                                  inputs_id=inputs_id)
-    # one pass per language: the stages before translate are shared, so later passes skip them
-    for i, target in enumerate(targets):
+    # the stages before translate are shared by every language; then one translate pass per language
+    Pipeline(stages, run.work_dir, config["TRANSLATOR"]).run(run, config, to_stage="segment", force=args.force,
+                                                              inputs_id=inputs_id)
+    targets = _without_source(targets, read_json(run.segments)["language"])
+    for target in targets:
         config["TARGET_LANGUAGE"] = target
         print(f"🌐 {target}")
         pipeline = Pipeline(stages, run.work_dir, f"{config['TRANSLATOR']}:{target}")
-        # --force re-runs everything once, then only translation for the other languages
-        pipeline.run(run, config, force=args.force and i == 0,
-                     from_stage="translate" if args.force and i > 0 else None, inputs_id=inputs_id)
+        pipeline.run(run, config, from_stage="translate" if args.force else None, inputs_id=inputs_id)
     # written from the work files on every run, since output/ holds one file per language whichever translator
     # made it: a skipped translate stage must still replace another translator's file
     written = [write_subtitles(read_json(run.segments), "text", run.source_subtitles())]
