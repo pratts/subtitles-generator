@@ -40,9 +40,8 @@ Milestone: [Phase 2: PyPI package](https://github.com/pratts/subtitles-generator
 **Main work**
 - Version pins in `pyproject.toml` itself, since users of the package never see `constraints.txt`
 - Build and publish (name checked free on PyPI on 2026-10-31), with release notes
-- A README written as the project's front page: pitch, quick start, examples, translator choices (gpt with glossary
-  and context, or google), the first-run model download, config reference,
-  known limitations
+- The README's quick start with `pip install subtitles-generator` instead of a clone (the README became the
+  project's front page in #29)
 
 **Complications to expect**
 - whisperx pins torch and huggingface-hub; loose pins break installs, strict pins clash with users' other packages.
