@@ -42,7 +42,11 @@ class Pipeline:
         return [s.name for s in self.stages]
 
     def run(self, context, config: dict, from_stage: str | None = None, to_stage: str | None = None,
-            force: bool = False, inputs_id: str = ""):
+            inputs_id: str = ""):
+        """
+        Run every stage that is not up to date, up to to_stage. With from_stage, also redo from_stage and the
+        stages after it; the stages before it must be up to date, since redoing them can take hours.
+        """
         names = self.names()
         for name in (from_stage, to_stage):
             if name and name not in names:
@@ -57,11 +61,14 @@ class Pipeline:
             entry = self.state.get(key)
             done = (entry is not None and entry["fingerprint"] == fingerprint
                     and all(os.path.exists(p) for p in stage.outputs(context)))
-            requested = force or (from_stage is not None and i >= start)
+            requested = from_stage is not None and i >= start
             if done and not requested:
                 print(f"⏭️  [{i + 1}/{len(names)}] {stage.name}: up to date, skipping")
                 upstream = entry["result"]
                 continue
+            if from_stage is not None and i < start:
+                raise SystemExit(f"Can't redo from {from_stage}: {self.not_done(stage, entry, context)}. "
+                                 f"Use --force {stage.name} to redo it too.")
 
             print(f"▶️  [{i + 1}/{len(names)}] {stage.name}: {stage.description}")
             started = time.time()
@@ -73,6 +80,14 @@ class Pipeline:
                                "seconds": round(time.time() - started, 1),
                                "finished": time.strftime("%Y-%m-%dT%H:%M:%S")}
             self._save()
+
+    def not_done(self, stage: Stage, entry: dict | None, context) -> str:
+        if entry is None:
+            return f"{stage.name} has not finished"
+        missing = [p for p in stage.outputs(context) if not os.path.exists(p)]
+        if missing:
+            return f"{stage.name}'s {', '.join(missing)} {'is' if len(missing) == 1 else 'are'} missing"
+        return f"{stage.name} must run again, since its settings or the video changed"
 
     def key(self, stage: Stage) -> str:
         return f"{stage.name}:{self.translator}" if stage.per_translator else stage.name

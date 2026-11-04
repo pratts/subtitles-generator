@@ -67,8 +67,21 @@ def test_from_stage_to_stage_and_force(ctx):
     assert ctx.ran == ["a", "b"]
     run(ctx, from_stage="b")
     assert ctx.ran[2:] == ["b", "c", "d"]
-    run(ctx, force=True)
+    run(ctx, from_stage="a")
     assert ctx.ran[5:] == ["a", "b", "c", "d"]
+
+
+def test_redo_from_a_stage_stops_when_an_earlier_one_is_not_up_to_date(ctx):
+    with pytest.raises(SystemExit, match="Can't redo from c: a has not finished. Use --force a"):
+        run(ctx, from_stage="c")
+    run(ctx)
+    os.remove(os.path.join(ctx.folder, "b"))
+    with pytest.raises(SystemExit, match=r"b's .*/b is missing"):
+        run(ctx, from_stage="c")
+    run(ctx)
+    with pytest.raises(SystemExit, match="b must run again, since its settings or the video changed"):
+        run(ctx, config={"B": "changed"}, from_stage="c")
+    assert ctx.ran == ["a", "b", "c", "d", "b", "c", "d"]     # nothing ran when it stopped
 
 
 def test_changed_input_reruns_everything(ctx):

@@ -86,6 +86,30 @@ def test_force_reruns_everything_once_and_every_translation(fake_stages):
     assert fake_stages == ["extract", "transcribe", "segment", "translate:es", "translate:fr"]
 
 
+def test_force_a_stage_redoes_it_and_the_later_ones(fake_stages):
+    cli.main(["talk.mp4", "--to", "es,fr"])
+    fake_stages.clear()
+    cli.main(["talk.mp4", "--to", "es,fr", "--force", "segment"])
+    assert fake_stages == ["segment", "translate:es", "translate:fr"]
+    fake_stages.clear()
+    cli.main(["talk.mp4", "--to", "es", "--force", "translate"])
+    assert fake_stages == ["translate:es"]
+
+
+def test_force_a_stage_stops_when_an_earlier_one_would_have_to_run(fake_stages):
+    with pytest.raises(SystemExit, match="Can't redo from segment: extract has not finished"):
+        cli.main(["talk.mp4", "--to", "es", "--force", "segment"])
+    cli.main(["talk.mp4", "--to", "es"])
+    fake_stages.clear()
+    with pytest.raises(SystemExit, match="separate has not finished"):
+        cli.main(["talk.mp4", "--to", "es", "--separate", "--force", "segment"])
+    with pytest.raises(SystemExit, match="transcribe must run again"):
+        cli.main(["talk.mp4", "--to", "es", "--from", "en", "--force", "segment"])
+    with pytest.raises(SystemExit, match="--force separate needs --separate"):
+        cli.main(["talk.mp4", "--to", "es", "--force", "separate"])
+    assert fake_stages == []
+
+
 def test_output_follows_the_selected_translator(fake_stages):
     cli.main(["talk.mp4", "--to", "es", "--translator", "google"])
     cli.main(["talk.mp4", "--to", "es", "--translator", "gpt"])
