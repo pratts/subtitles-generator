@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from subtitles_generator.pipeline import Pipeline, Stage
+from subtitles_generator.pipeline import Pipeline, Stage, format_duration
 
 
 class Context:
@@ -96,3 +96,9 @@ def test_per_translator_stages_are_kept_separately(ctx):
     run(ctx, stages, translator="google")
     run(ctx, stages, translator="gpt")
     assert ctx.ran == ["a", "b", "c", "d", "c", "d"]
+
+
+def test_each_finished_stage_says_how_long_it_took(ctx, capsys):
+    run(ctx, to_stage="a")
+    assert "✅ a finished in 0.0 s" in capsys.readouterr().out
+    assert [format_duration(s) for s in (0.34, 42.4, 1721.3, 8014.5)] == ["0.3 s", "42 s", "28 min 41 s", "2 h 13 min"]
