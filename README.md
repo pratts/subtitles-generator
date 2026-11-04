@@ -97,7 +97,7 @@ Whisper and translators often misspell names. A glossary fixes that:
 ```bash
 subtitle my-video.mp4 --to en --glossary glossary.json --context "Street interview in Sendai about life in Japan"
 ```
-The glossary's source terms are given to Whisper so it spells them as written; with a Japanese or Chinese glossary this also makes Whisper add punctuation, which gives better line breaks. The `gpt` translator uses the translations and the one-line context; `google` ignores both.
+The glossary's source terms are given to Whisper so it spells them as written; with a Japanese or Chinese glossary this also makes Whisper add punctuation, which gives better line breaks. The `gpt` translator uses the translations and the one-line context; `google` ignores both. During music or silence, Whisper sometimes writes the glossary back as a line ("Niko, Takashi, Aya,"), or a line it learned from the ends of videos ("Thanks for watching"); such lines are dropped, and the run says how many.
 
 ### Resuming
 Each video gets a work folder, `work/<video name>/`. Finished steps are remembered, so running again only does what is new:
