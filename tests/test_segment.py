@@ -212,3 +212,16 @@ def test_japanese_keeps_spaces_between_latin_words():
     t["segments"][0]["text"] = text
     doc = build_segments(t, [], video_duration=5.0)
     assert "".join(s["text"] for s in doc["segments"]) == "Easy Japaneseは仙台から日本語3回"
+
+
+def test_a_word_stretched_over_a_pause_ends_once_it_can_be_read():
+    # こんにちは grouped into one phrase whose last characters the aligner placed 23 s later
+    chars = [("こ", 10.0, 10.1), ("ん", 10.1, 10.2), ("に", 10.2, 10.3), ("ち", 10.3, 10.4), ("は", 33.4, 33.5),
+             ("。", 33.5, 33.5)]
+    t = transcript([words(*chars)], language="ja")
+    [seg] = build_segments(t, [], video_duration=40.0)["segments"]
+    assert seg["text"] == "こんにちは。"
+    assert (seg["start"], seg["end"]) == (10.0, 11.5)            # 6 characters at 5 a second, at least 1.5 s
+    t = transcript([words(("Dragonfly", 5.0, 17.0))])
+    [seg] = build_segments(t, [], video_duration=20.0)["segments"]
+    assert seg["end"] - seg["start"] <= 1.5
