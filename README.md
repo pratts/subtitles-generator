@@ -105,10 +105,14 @@ Each video gets a work folder, `work/<video name>/`. Finished steps are remember
 - after a failure or interruption, the next run resumes where it stopped
 
 ```bash
-subtitle my-video.mp4 --force      # redo everything
-subtitle my-video.mp4 --clean      # delete the video's work and output folders
-subtitle my-video.mp4 --verbose    # also show the libraries' own output
+subtitle my-video.mp4 --force              # redo everything
+subtitle my-video.mp4 --force segment      # redo the subtitle lines and the translations, keep the transcript
+subtitle my-video.mp4 --force translate    # redo only the translations
+subtitle my-video.mp4 --clean              # delete the video's work and output folders
+subtitle my-video.mp4 --verbose            # also show the libraries' own output
 ```
+The steps are `extract`, `separate`, `transcribe`, `segment` and `translate`. `--force <step>` needs the steps before it to be finished and up to date: if one isn't (e.g. its files were deleted or its settings changed), it stops and says which, instead of quietly running it, since separation and transcription can take hours for a film.
+
 The libraries' own output is always written to `work/<video name>/run.log`.
 
 ### Speech hidden by music or noise
@@ -142,7 +146,7 @@ For a Japanese video, the downloads added about 4 minutes at 12 MB/s. Later runs
 - **`the gpt translator needs OPENAI_API_KEY`** (or `GOOGLE_APPLICATION_CREDENTIALS` for `google`): set it in `.env`; see [Configuration](#configuration).
 - **The first run is slow:** it downloads up to 3.2 GB of models; see [First run](#first-run).
 - **Something failed:** the libraries' own output and the full error are in `work/<video name>/run.log`; `--verbose` also shows them on the console.
-- **After updating the code:** run again with `--force` (or `--clean`). Finished steps are only redone when their settings change, not when the code does.
+- **After updating the code:** run again with `--force`, or `--force segment` to keep the transcript. Finished steps are only redone when their settings change, not when the code does.
 - **Lines are missing:** speech under music or noise may not be transcribed; try `--separate`.
 
 ## Known limitations

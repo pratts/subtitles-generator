@@ -149,7 +149,9 @@ def main(argv: list[str] | None = None):
     parser.add_argument("--config", help="settings file (default: ./config.toml if present)")
     parser.add_argument("--work-dir", default="work", help="folder for intermediate files (default: work)")
     parser.add_argument("--output-dir", default="output", help="folder for the subtitles, one subfolder per video (default: output)")
-    parser.add_argument("--force", action="store_true", help="re-run every stage")
+    parser.add_argument("--force", nargs="?", const=STAGES[0].name, choices=[s.name for s in STAGES],
+                        metavar="STAGE", help="re-run every stage, or STAGE and the ones after it "
+                                              f"({', '.join(s.name for s in STAGES)})")
     parser.add_argument("--clean", action="store_true", help="delete this video's work and output folders and exit")
     parser.add_argument("--verbose", action="store_true",
                         help="also show third-party output (always written to <work folder>/run.log)")
@@ -210,12 +212,16 @@ def subtitle(run: Run, config: dict, args):
         # the video's own language needs no key
         from subtitles_generator.translate import missing_credentials
         problem = missing_credentials(config["TRANSLATOR"])
+    if not problem and args.force == "separate" and not config["SEPARATE"]:
+        problem = "--force separate needs --separate (or separate = true in config.toml)"
     if problem:
         raise SystemExit(problem)
     inputs_id = file_id(run.video)
     stages = [s for s in STAGES if s.name != "separate" or config["SEPARATE"]]
     # the stages before translate are shared by every language; then one translate pass per language
-    Pipeline(stages, run.work_dir, config["TRANSLATOR"]).run(run, config, to_stage="segment", force=args.force,
+    # --force translate redoes only the translations
+    shared_from = args.force if args.force != "translate" else None
+    Pipeline(stages, run.work_dir, config["TRANSLATOR"]).run(run, config, from_stage=shared_from, to_stage="segment",
                                                               inputs_id=inputs_id)
     targets = _without_source(targets, read_json(run.segments)["language"])
     for target in targets:
