@@ -97,7 +97,7 @@ Whisper and translators often misspell names. A glossary fixes that:
 ```bash
 subtitle my-video.mp4 --to en --glossary glossary.json --context "Street interview in Sendai about life in Japan"
 ```
-The glossary's source terms are given to Whisper so it spells them as written; with a Japanese or Chinese glossary this also makes Whisper add punctuation, which gives better line breaks. The `gpt` translator uses the translations and the one-line context; `google` ignores both. During music or silence, Whisper sometimes writes the glossary back as a line ("Niko, Takashi, Aya,"), or a line it learned from the ends of videos ("Thanks for watching"); such lines are dropped, and the run says how many.
+The glossary's source terms are given to Whisper so it spells them as written; with a Japanese or Chinese glossary this also makes Whisper add punctuation, which gives better line breaks. The `gpt` translator uses the translations and the one-line context; `google` ignores both. Write the translations as they should appear in the subtitles, in the target language's script: for Hindi subtitles, `{"Aang": "आंग"}`. During music or silence, Whisper sometimes writes the glossary back as a line ("Niko, Takashi, Aya,"), or a line it learned from the ends of videos ("Thanks for watching"); such lines are dropped, and the run says how many.
 
 ### Resuming
 Each video gets a work folder, `work/<video name>/`. Finished steps are remembered, so running again only does what is new:
@@ -152,7 +152,7 @@ For a Japanese video, the downloads added about 4 minutes at 12 MB/s. Later runs
 ## Known limitations
 - Background noise or music can hide speech, so some lines are not transcribed; `--separate` helps.
 - A subtitle shows at most 84 characters (2 lines of 42) for at most 7 s; longer lines are split between words. Translations keep each line's timing, so when a sentence spans two lines, word order can differ from the speech.
-- Glossary names keep the glossary's spelling, so in a language with another script (e.g. Hindi) they stay in Latin letters.
+- One glossary serves every `--to` language, so with targets in different scripts (e.g. `--to hi,fr`), glossary names are in the right script in only one of them.
 
 ## Development
 ```bash
