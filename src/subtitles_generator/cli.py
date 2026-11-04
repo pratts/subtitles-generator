@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import sys
+import time
 from dotenv import load_dotenv
 
 # Load .env before importing the pipeline modules, so secrets and settings are available when they load
@@ -10,7 +11,7 @@ load_dotenv()
 
 from subtitles_generator import output
 from subtitles_generator.config import load_config
-from subtitles_generator.pipeline import Pipeline, Stage, file_id
+from subtitles_generator.pipeline import Pipeline, Stage, file_id, format_duration
 from subtitles_generator.subtitles import subtitles_path, write_subtitles
 
 # Each stage imports its own modules when it runs, so --help, --clean and skipped stages
@@ -205,6 +206,7 @@ def _without_source(targets: list[str], source: str) -> list[str]:
 
 
 def subtitle(run: Run, config: dict, args):
+    started = time.time()
     targets = target_languages(config["TARGET_LANGUAGES"])
     if config["SOURCE_LANGUAGE"]:
         targets = _without_source(targets, config["SOURCE_LANGUAGE"])
@@ -241,7 +243,7 @@ def subtitle(run: Run, config: dict, args):
     for target in targets:
         config["TARGET_LANGUAGE"] = target
         written.append(write_subtitles(read_json(run.translation()), "translation", run.target_subtitles()))
-    print(f"🎉 Done: {', '.join(written)}")
+    print(f"🎉 Done in {format_duration(time.time() - started)}: {', '.join(written)}")
 
 
 if __name__ == "__main__":

@@ -60,9 +60,10 @@ def test_target_languages_are_split_and_deduplicated():
     assert cli.target_languages("") == []
 
 
-def test_source_language_only_without_targets(fake_stages):
+def test_source_language_only_without_targets(fake_stages, capsys):
     cli.main(["talk.mp4"])
     assert fake_stages == ["extract", "transcribe", "segment"]
+    assert "🎉 Done in 0.0 s: " in capsys.readouterr().out
     assert os.path.exists("output/talk/talk.ja.srt")
 
 

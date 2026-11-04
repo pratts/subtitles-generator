@@ -75,9 +75,11 @@ class Pipeline:
             self.state.pop(key, None)
             self._save()
             stage.run(context)
+            seconds = time.time() - started
+            print(f"✅ {stage.name} finished in {format_duration(seconds)}")
             upstream = uuid.uuid4().hex
             self.state[key] = {"fingerprint": fingerprint, "result": upstream,
-                               "seconds": round(time.time() - started, 1),
+                               "seconds": round(seconds, 1),
                                "finished": time.strftime("%Y-%m-%dT%H:%M:%S")}
             self._save()
 
@@ -102,6 +104,18 @@ class Pipeline:
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(self.state, f, indent=2)
         os.replace(tmp, self.state_path)
+
+
+def format_duration(seconds: float) -> str:
+    """0.3 s, 42 s, 28 min 41 s, 2 h 13 min"""
+    if seconds < 10:
+        return f"{seconds:.1f} s"
+    seconds = round(seconds)
+    if seconds < 60:
+        return f"{seconds} s"
+    if seconds < 3600:
+        return f"{seconds // 60} min {seconds % 60} s"
+    return f"{seconds // 3600} h {seconds % 3600 // 60} min"
 
 
 def file_id(path: str) -> str:
