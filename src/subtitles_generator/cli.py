@@ -92,9 +92,15 @@ def transcribe_stage(run: Run):
 
 
 def segment(run: Run):
+    from subtitles_generator.invented import drop_invented
     from subtitles_generator.segment import build_segments, save_segments
+    transcript, dropped = drop_invented(read_json(run.transcript), list(run.config["GLOSSARY"] or {}))
+    if dropped:
+        examples = ", ".join(dict.fromkeys(dropped))
+        print(f"🧹 Dropped {len(dropped)} line{"s" if len(dropped) > 1 else ""} Whisper wrote during silence or music: "
+              f"{examples if len(examples) <= 120 else examples[:120] + '…'}")
     # no diarization: every word gets the same speaker
-    segments = build_segments(read_json(run.transcript), [], run.duration(),
+    segments = build_segments(transcript, [], run.duration(),
                               min_duration=run.config["SEGMENT_MIN_DURATION"],
                               merge_gap=run.config["SEGMENT_MERGE_GAP"])
     save_segments(segments, run.segments, run.segments_srt)
@@ -116,7 +122,7 @@ STAGES = [
     Stage("transcribe", "transcribing the audio", transcribe_stage,
           lambda r: [r.transcript], ["SEPARATE", "ASR_BACKEND", "WHISPER_MODEL", "SOURCE_LANGUAGE", "GLOSSARY"]),
     Stage("segment", "building subtitle segments", segment, lambda r: [r.segments],
-          ["SEGMENT_MIN_DURATION", "SEGMENT_MERGE_GAP"]),
+          ["SEGMENT_MIN_DURATION", "SEGMENT_MERGE_GAP", "GLOSSARY"]),
     Stage("translate", "translating the segments", translate, lambda r: [r.translation()],
           ["TRANSLATOR", "TARGET_LANGUAGE", "GLOSSARY", "VIDEO_CONTEXT", "LLM_MODEL", "LLM_BASE_URL"],
           per_translator=True),
