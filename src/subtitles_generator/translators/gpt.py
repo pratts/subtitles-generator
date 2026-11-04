@@ -14,8 +14,9 @@ SYSTEM_PROMPT = dedent("""
     Rules:
     - Return exactly one translation for every id in "lines", and nothing for the context lines.
     - "translation": a faithful, complete {target} translation of the line, in natural written {target}
-      (never the original text). Keep the speaker's meaning and tone; leave out only filler words
-      ("um", "you know") and stutters.
+      (never the original text). Keep the speaker's meaning and tone; leave out only filler sounds
+      ("um", "uh") and stutters.
+    - A line already in {target}, such as a song's lyrics, is copied unchanged.
     - Lines can be fragments of a sentence that continues in the next line. Keep each line's content in
       that line so the sequence reads naturally.
     - Use the glossary translations for names and terms.
