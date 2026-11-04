@@ -21,7 +21,21 @@ def group_into_phrases(units: list[dict], language: str) -> list[dict]:
     if language not in GROUPERS:
         return units
     tokenizer = importlib.import_module(GROUPERS[language])
-    return [phrase for block in _blocks(units) for phrase in _group_block(block, tokenizer.tokens)]
+    return [phrase for block in _blocks(units) for run in _latin_runs(block)
+            for phrase in (run if run[0].get("latin") else _group_block(run, tokenizer.tokens))]
+
+
+def _latin_runs(units: list[dict]) -> list[list[dict]]:
+    """
+    Split a block into runs of Latin words (marked "latin" by segment.py) and of the language's own text.
+    Each Latin word stays a phrase of its own, as in English.
+    """
+    runs = []
+    for u in units:
+        if not runs or bool(runs[-1][-1].get("latin")) != bool(u.get("latin")):
+            runs.append([])
+        runs[-1].append(u)
+    return runs
 
 
 def _group_block(units: list[dict], tokens) -> list[dict]:
