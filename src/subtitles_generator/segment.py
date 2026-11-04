@@ -14,6 +14,9 @@ CLAUSE_END = ("、", "，", ",", ";", "；", ":", "：")
 # One subtitle shows at most 2 lines of 42 characters, for at most 7 s
 SUBTITLE_MAX_CHARS = 2 * 42
 SUBTITLE_MAX_DURATION = 7.0
+# Reading speed, used to end a subtitle whose one word the aligner stretched over a pause
+READING_CHARS_PER_SECOND = 15
+READING_CHARS_PER_SECOND_NO_SPACES = 5
 
 
 # === Step 3b: Build dubbing segments from timed words and speaker turns ===
@@ -54,6 +57,8 @@ def build_segments(transcript: dict, turns: list[dict], video_duration: float | 
     segments = [part for seg in segments for part in _split_long(seg, max_duration, min_duration)]
     segments = [part for seg in segments
                 for part in _split_for_subtitles(seg, subtitle_max_chars, subtitle_max_duration, no_spaces)]
+    for seg in segments:
+        _shorten_stretched(seg, subtitle_max_duration, min_duration, no_spaces)
 
     return _document(transcript, segments, video_duration, no_spaces)
 
@@ -301,6 +306,19 @@ def _split_for_subtitles(seg: list[dict], max_chars: int, max_duration: float, n
         k = min(range(len(seg) - 1), key=lambda k: abs((seg[k]["end"] + seg[k + 1]["start"]) / 2 - middle))
     return (_split_for_subtitles(seg[:k + 1], max_chars, max_duration, no_spaces)
             + _split_for_subtitles(seg[k + 1:], max_chars, max_duration, no_spaces))
+
+
+def _shorten_stretched(seg: list[dict], max_duration: float, min_duration: float, no_spaces: bool):
+    """
+    A subtitle still longer than max_duration after splitting is one word (a phrase in Japanese and Chinese)
+    that the aligner stretched over the silence or music around it, e.g. こんにちは on screen for 24 s. End it
+    once its text can be read, from its start: the stretch is usually after the speech.
+    """
+    if _duration(seg) <= max_duration:
+        return
+    speed = READING_CHARS_PER_SECOND_NO_SPACES if no_spaces else READING_CHARS_PER_SECOND
+    readable = min(max_duration, max(min_duration, len(_text(seg, no_spaces)) / speed))
+    seg[-1]["end"] = seg[0]["start"] + readable
 
 
 def _document(transcript: dict, segments: list[list[dict]], video_duration: float | None,
