@@ -48,6 +48,8 @@ def build_segments(transcript: dict, turns: list[dict], video_duration: float | 
 
     _trim_long_words(words, no_spaces)
     _move_back_unmatched(words, pause)
+    if no_spaces:
+        words = _join_latin_letters(words)
     words = group_into_phrases(words, transcript["language"])
     _assign_speakers(words, [t for t in turns if t["end"] - t["start"] >= min_turn_length] or turns)
     _smooth_speakers(words, min_turn, weak_turn, min_support)
@@ -105,6 +107,38 @@ def _mark_spaces(units: list[dict], text: str):
                 and _is_latin(prev["word"][-1]) and _is_latin(u["word"][0])):
             u["space_before"] = True
         pos = start + len(u["word"])
+
+
+def _is_latin_letters(text: str) -> bool:
+    """A unit of Latin letters, with its attached punctuation (s., t')."""
+    letters = [c for c in text if not unicodedata.category(c).startswith("P")]
+    return bool(letters) and all(unicodedata.name(c, "").startswith("LATIN") for c in letters)
+
+
+def _join_latin_letters(units: list[dict]) -> list[dict]:
+    """
+    English inside Japanese or Chinese speech (a song) is aligned per letter, and Whisper joins its pieces without
+    a space ("sadSometimes"). Join the letters into words, so lines are split between words: a word ends at a
+    space in Whisper's text, after punctuation other than an apostrophe, and where a capital follows a small
+    letter. A word after another one starts with a space.
+    """
+    out = []
+    for u in units:
+        prev = out[-1] if out else None
+        if (prev is not None and prev.get("latin") and _is_latin_letters(u["word"]) and u["block"] == prev["block"]
+                and not u.get("space_before") and not (u["word"][0].isupper() and prev["word"][-1].islower())
+                and (prev["word"][-1].isalpha() or prev["word"][-1] in "'’")):
+            prev["word"] += u["word"]
+            prev["end"] = u["end"]
+            prev["scores"].append(u.get("score"))
+            continue
+        out.append({**u, "latin": _is_latin_letters(u["word"]), "scores": [u.get("score")]})
+        if out[-1]["latin"] and prev is not None and prev.get("latin"):
+            out[-1]["space_before"] = True
+    for u in out:
+        scores = [x for x in u.pop("scores") if x is not None]
+        u["score"] = sum(scores) / len(scores) if scores else None
+    return out
 
 
 def _is_ideograph(text: str) -> bool:

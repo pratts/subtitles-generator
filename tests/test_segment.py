@@ -225,3 +225,23 @@ def test_a_word_stretched_over_a_pause_ends_once_it_can_be_read():
     t = transcript([words(("Dragonfly", 5.0, 17.0))])
     [seg] = build_segments(t, [], video_duration=20.0)["segments"]
     assert seg["end"] - seg["start"] <= 1.5
+
+
+def test_english_in_japanese_speech_is_split_between_words():
+    # a song: Whisper joins its pieces without a space, and the aligner times each letter
+    text = "Sometimes I feel so sadSometimes I feel so happy"
+    letters = [c for c in text if c != " "]
+    t = transcript([words(*[(c, i * 0.25, i * 0.25 + 0.2) for i, c in enumerate(letters)])], language="ja")
+    t["segments"][0]["text"] = text
+    doc = build_segments(t, [], video_duration=20.0, subtitle_max_duration=4.0)
+    lines = [s["text"] for s in doc["segments"]]
+    assert " ".join(lines) == "Sometimes I feel so sad Sometimes I feel so happy"
+    assert all(not line.startswith(" ") for line in lines)
+    assert len(lines) > 1
+
+
+def test_no_space_is_added_between_japanese_and_english():
+    text = "20分後。OK。"
+    t = transcript([words(*[(c, i * 0.2, i * 0.2 + 0.2) for i, c in enumerate(text)])], language="ja")
+    t["segments"][0]["text"] = text
+    assert "".join(s["text"] for s in build_segments(t, [], video_duration=5.0)["segments"]) == text
