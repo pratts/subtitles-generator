@@ -245,3 +245,10 @@ def test_no_space_is_added_between_japanese_and_english():
     t = transcript([words(*[(c, i * 0.2, i * 0.2 + 0.2) for i, c in enumerate(text)])], language="ja")
     t["segments"][0]["text"] = text
     assert "".join(s["text"] for s in build_segments(t, [], video_duration=5.0)["segments"]) == text
+
+
+def test_a_short_subtitle_stays_on_screen_until_it_can_be_read():
+    t = transcript([words(("Huh?", 2.0, 2.1)), words(("Wait.", 2.6, 2.9)), words(("No.", 5.0, 5.2))])
+    doc = build_segments(t, [], video_duration=5.5, min_duration=0.1, merge_gap=0.1)
+    assert [(s["start"], s["end"]) for s in doc["segments"]] == [(2.0, 2.6), (2.6, 3.6), (5.0, 5.5)]
+    assert doc["segments"][0]["words"][0]["end"] == 2.1           # the words keep their timing

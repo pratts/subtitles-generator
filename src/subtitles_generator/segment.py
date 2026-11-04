@@ -14,6 +14,8 @@ CLAUSE_END = ("、", "，", ",", ";", "；", ":", "：")
 # One subtitle shows at most 2 lines of 42 characters, for at most 7 s
 SUBTITLE_MAX_CHARS = 2 * 42
 SUBTITLE_MAX_DURATION = 7.0
+# and, when the next one starts later, for at least 1 s: a word said alone (はい, "Huh?") is too quick to read
+SUBTITLE_MIN_DURATION = 1.0
 # Reading speed, used to end a subtitle whose one word the aligner stretched over a pause
 READING_CHARS_PER_SECOND = 15
 READING_CHARS_PER_SECOND_NO_SPACES = 5
@@ -361,6 +363,7 @@ def _document(transcript: dict, segments: list[list[dict]], video_duration: floa
     for i, seg in enumerate(segments):
         start, end = seg[0]["start"], seg[-1]["end"]
         next_start = segments[i + 1][0]["start"] if i + 1 < len(segments) else video_duration
+        end = max(end, min(start + SUBTITLE_MIN_DURATION, next_start if next_start is not None else float("inf")))
         out.append({
             "id": i,
             "speaker": seg[0]["speaker"],
